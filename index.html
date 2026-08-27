@@ -132,8 +132,9 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items
 .drop strong{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .drop span{font-size:14px;color:var(--label)}
 
-.bar{height:3px;border-radius:2px;background:var(--track);overflow:hidden;margin-top:12px;display:none}
-.bar.show{display:block}
+/* Always occupies its 3 px, so starting a load cannot shift the frame. */
+.bar{height:3px;border-radius:2px;background:var(--track);overflow:hidden;margin:0 0 10px;opacity:0;transition:opacity .25s}
+.bar.show{opacity:1}
 .bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .18s linear}
 
 .meta{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-top:12px;min-height:20px}
@@ -143,6 +144,9 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items
 .credit a{color:var(--label)}
 
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+/* The frame changes aspect with every photo, so the controls live above it and
+   keep their position; only the text below the frame moves. */
+section>.toolbar{margin-top:0;margin-bottom:10px}
 .toolbar .grow{flex:1}
 .keys{margin-top:12px;font:500 12px var(--mono);color:var(--faint);letter-spacing:.02em}
 
@@ -248,7 +252,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items
 /* export popover */
 .exp{position:relative;display:inline-flex}
 .menu{
-  position:absolute;right:0;bottom:calc(100% + 8px);z-index:5;min-width:230px;
+  position:absolute;right:0;top:calc(100% + 8px);z-index:5;min-width:230px;
   display:flex;flex-direction:column;padding:6px;border-radius:14px;
   background:rgba(28,28,30,.92);border:.5px solid var(--stroke);
   backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
@@ -432,6 +436,27 @@ footer .grow{flex:1}
 
 <main>
   <section>
+    <div class="toolbar">
+      <button class="btn primary" id="open" data-icon="photo">Open Photo&hellip;</button>
+      <button class="btn" id="demo" data-icon="shuffle">Random Photo</button>
+      <button class="btn" id="play" data-icon="pause">Pause</button>
+      <button class="btn" id="full" data-icon="expand">Full Screen</button>
+      <span class="grow"></span>
+      <button class="btn" id="share" data-icon="share">Share</button>
+      <div class="exp">
+        <button class="btn" id="export" data-icon="download" disabled aria-haspopup="true" aria-expanded="false">Export</button>
+        <div class="menu" id="exportmenu" hidden role="menu">
+          <button data-x="frame" data-icon="photo" role="menuitem">Image<small>PNG</small></button>
+          <button data-x="depth" data-icon="layers" role="menuitem">Depth Map<small>PNG</small></button>
+          <button data-x="anaglyph" data-icon="glasses" role="menuitem">Anaglyph<small>red/cyan</small></button>
+          <button data-x="stereo" data-icon="stereo" role="menuitem">Stereo Pair<small>SBS</small></button>
+          <button data-x="clip" data-icon="film" role="menuitem">Looping Clip<small id="clipfmt">video</small></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bar" id="bar"><i id="barfill"></i></div>
+
     <div class="viewer" id="viewer">
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Open a photo">
         <span data-icon="photo"></span>
@@ -454,30 +479,9 @@ footer .grow{flex:1}
       <input type="file" id="file" accept="image/*" hidden>
     </div>
 
-    <div class="bar" id="bar"><i id="barfill"></i></div>
-
     <div class="meta">
       <p class="status" id="status" role="status"></p>
-      <p class="credit" id="credit" hidden>Photo via <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></p>
-    </div>
-
-    <div class="toolbar">
-      <button class="btn primary" id="open" data-icon="photo">Open Photo&hellip;</button>
-      <button class="btn" id="demo" data-icon="shuffle">Random Photo</button>
-      <button class="btn" id="play" data-icon="pause">Pause</button>
-      <button class="btn" id="full" data-icon="expand">Full Screen</button>
-      <span class="grow"></span>
-      <button class="btn" id="share" data-icon="share">Share</button>
-      <div class="exp">
-        <button class="btn" id="export" data-icon="download" disabled aria-haspopup="true" aria-expanded="false">Export</button>
-        <div class="menu" id="exportmenu" hidden role="menu">
-          <button data-x="frame" data-icon="photo" role="menuitem">Image<small>PNG</small></button>
-          <button data-x="depth" data-icon="layers" role="menuitem">Depth Map<small>PNG</small></button>
-          <button data-x="anaglyph" data-icon="glasses" role="menuitem">Anaglyph<small>red/cyan</small></button>
-          <button data-x="stereo" data-icon="stereo" role="menuitem">Stereo Pair<small>SBS</small></button>
-          <button data-x="clip" data-icon="film" role="menuitem">Looping Clip<small id="clipfmt">video</small></button>
-        </div>
-      </div>
+      <p class="credit" id="credit" hidden>Photo via <a id="creditlink" href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></p>
     </div>
 
     <p class="keys">Space play · D view · P pointer · F full screen · R reset</p>
@@ -1228,85 +1232,124 @@ function shapedDepth(){
    the parallax off: forests, foliage, layered landscapes. Fetched as blobs so
    the canvas stays untainted and the depth map is still exportable.
    All landscape: a portrait frame pushes the controls off the first screen. */
-/* 211 landscape scenes with real foreground-to-background separation, which is
+/* 216 landscape scenes with real foreground-to-background separation, which is
    what shows the parallax off: forests, foliage, canyons, layered landscapes.
-   Harvested from Unsplash search and verified to resolve at this exact URL
-   shape; premium photos 404 here, so every entry was fetched before it was
-   added. Fetched as blobs so the canvas stays untainted and the depth map is
-   still exportable. All landscape: a portrait frame pushes the controls off
-   the first screen. */
+   Each entry is the CDN token that serves the pixels, then the eleven-character
+   Unsplash photo id the credit link points at. Ids may contain dashes and
+   underscores, so they are stored whole rather than parsed out of a slug.
+   Harvested from Unsplash search and verified: every token was fetched at this
+   exact URL shape, and premium photos, which 404 here, were dropped. Fetched as
+   blobs so the canvas stays untainted and the depth map is still exportable.
+   All landscape: a portrait frame pushes the controls off the first screen. */
 const DEMOS=[
-  'photo-1418065460487-3e41a6c84dc5', 'photo-1429743305873-d4065c15f93e', 'photo-1432298026442-0eabd0a98870',
-  'photo-1437252611977-07f74518abd7', 'photo-1437964706703-40b90bdf563b', 'photo-1440342359743-84fcb8c21f21',
-  'photo-1441974231531-c6227db76b6e', 'photo-1442120108414-42e7ea50d0b5', 'photo-1444703686981-a3abbc4d4fe3',
-  'photo-1444927714506-8492d94b4e3d', 'photo-1445294211564-3ca59d999abd', 'photo-1445711005973-54fe2a103826',
-  'photo-1445855743215-296f71d4b49c', 'photo-1445964047600-cdbdb873673d', 'photo-1446292532430-3e76f6ab6444',
-  'photo-1448375240586-882707db888b', 'photo-1456346043496-935d8f0b4084', 'photo-1458966480358-a0ac42de0a7a',
-  'photo-1462143338528-eca9936a4d09', 'photo-1466854076813-4aa9ac0fc347', 'photo-1470058869958-2a77ade41c02',
-  'photo-1475359524104-d101d02a042b', 'photo-1476362555312-ab9e108a0b7e', 'photo-1480004902249-cdb28d6a01a4',
-  'photo-1486707471592-8e7eb7e36f78', 'photo-1487525219605-eadb39ae229c', 'photo-1487621167305-5d248087c724',
-  'photo-1488330890490-c291ecf62571', 'photo-1488645411773-a3b09ea07e29', 'photo-1490100667990-4fced8021649',
-  'photo-1498408040764-ab6eb772a145', 'photo-1498429089284-41f8cf3ffd39', 'photo-1500215238115-1322078d92a3',
-  'photo-1500964757637-c85e8a162699', 'photo-1501255184224-b8e069bca278', 'photo-1501430654243-c934cec2e1c0',
-  'photo-1501554894602-ef5eab1e72f2', 'photo-1502082553048-f009c37129b9', 'photo-1502252430442-aac78f397426',
-  'photo-1503453363464-743ee9ce1584', 'photo-1503785640985-f62e3aeee448', 'photo-1504740359065-0173be5609b5',
-  'photo-1505028106030-e07ea1bd80c3', 'photo-1505333201693-150bb240ef16', 'photo-1506452305024-9d3f02d1c9b5',
-  'photo-1507139722691-cc2c94e3a2b2', 'photo-1507371341162-763b5e419408', 'photo-1508025522233-ed33103769f5',
-  'photo-1508144322886-717c284ab392', 'photo-1508255139162-e1f7b7288ab7', 'photo-1509099395498-a26c959ba0b7',
-  'photo-1509316785289-025f5b846b35', 'photo-1509992030181-1c99eb07dec8', 'photo-1511884642898-4c92249e20b6',
-  'photo-1514481043218-e965c5886f06', 'photo-1515268064940-5150b7c29f35', 'photo-1515276427842-f85802d514a2',
-  'photo-1515446134809-993c501ca304', 'photo-1516528387618-afa90b13e000', 'photo-1516825994218-b2d93290b0fd',
-  'photo-1517024785852-498ab0c02de5', 'photo-1517157488732-b80ab10430e4', 'photo-1519567770579-c2fc5436bcf9',
-  'photo-1520302630591-fd1c66edc19d', 'photo-1521706862577-47b053587f91', 'photo-1521938739809-0f40f1cfd90c',
-  'photo-1523712999610-f77fbcfc3843', 'photo-1524959725226-f4deb958e979', 'photo-1526025202335-cf944dc3f799',
-  'photo-1527642220350-24155bae0505', 'photo-1528183429752-a97d0bf99b5a', 'photo-1529511582893-2d7e684dd128',
-  'photo-1530049478161-0780526964f4', 'photo-1531252582519-2d7e6795be96', 'photo-1531390267619-48f1f162e3d2',
-  'photo-1531756716853-09a60d38d820', 'photo-1532211387405-12202cb81d7b', 'photo-1532774979012-71b828494997',
-  'photo-1532884928231-ef40895eb654', 'photo-1533907650686-70576141c030', 'photo-1534711051555-054870a0e8f2',
-  'photo-1538506392157-218c11f95129', 'photo-1538935732373-f7a495fea3f6', 'photo-1541637593725-923467404d17',
-  'photo-1541959833400-049d37f98ccd', 'photo-1542273917363-3b1817f69a2d', 'photo-1564460549828-f0219a31bf90',
-  'photo-1564559259195-65c5a9ba6db7', 'photo-1565178117145-41db4d572950', 'photo-1568010967378-b92ea68220c5',
-  'photo-1571161535093-e7642c4bd0c8', 'photo-1572990485894-cf430d6c8715', 'photo-1573126617899-41f1dffb196c',
-  'photo-1577193647731-2e0c1d04a565', 'photo-1577209299418-485f60c0d4de', 'photo-1580259679654-9276b39fd2d5',
-  'photo-1581825357620-908500d7b245', 'photo-1583470790878-4f4f3811a01f', 'photo-1583642037383-861ac716c3f0',
-  'photo-1586061968253-7bf5724aab7b', 'photo-1586094332115-680788e0182f', 'photo-1586275381277-ef645628e280',
-  'photo-1586275381609-45bb8e2ee08c', 'photo-1586581277029-5769487f3881', 'photo-1586957469525-7850e7bef283',
-  'photo-1592275788122-970c9583048a', 'photo-1592859600972-1b0834d83747', 'photo-1593013174963-be2185e98a6c',
-  'photo-1593429474506-005c2cbebbfe', 'photo-1593455071238-92dd081a39b1', 'photo-1594842059196-5b6b8fa73187',
-  'photo-1594845222818-9097c52dabb5', 'photo-1595668379004-4565dc72e10f', 'photo-1595672049786-43da1581214c',
-  'photo-1595976281013-8024ecc02575', 'photo-1597201423947-3e0028337902', 'photo-1598358214378-3f0ca65e5318',
-  'photo-1598997898925-cfb4b5106f4b', 'photo-1600333591199-1c7f60b0c6a8', 'photo-1601281426795-9fedf41df8d1',
-  'photo-1601607924234-fd2638f672b5', 'photo-1602298674761-700e96568f5f', 'photo-1602557089158-f91c696af5fd',
-  'photo-1603044236937-882428dd6a19', 'photo-1604213410393-89f141bb96b8', 'photo-1604223190546-a43e4c7f29d7',
-  'photo-1604342767712-f7448911dc51', 'photo-1604488277305-817b4add03dc', 'photo-1605196560547-b2f7281b7355',
-  'photo-1607644546432-45b4e524dd3d', 'photo-1609428538208-e3dda29ec2e1', 'photo-1609428539144-01d21dda700c',
-  'photo-1610147323479-a7fb11ffd5dd', 'photo-1610375952728-224767d9325b', 'photo-1610552050890-fe99536c2615',
-  'photo-1611080402167-ed75bae6df32', 'photo-1611222566512-cb8dd8e689e5', 'photo-1611223157162-e4cb1419a7d6',
-  'photo-1612441804231-77a36b284856', 'photo-1612539473441-dfc1cefd5e1e', 'photo-1613985212734-166ffb5a513d',
-  'photo-1615094401770-713fecd4695a', 'photo-1617159156637-dfb8655c9f95', 'photo-1620452172311-2a17a5c9c35a',
-  'photo-1620870300436-a70b605f6ebe', 'photo-1621769507764-a9b056cf2d8a', 'photo-1621848296279-7751546e9acc',
-  'photo-1622003842218-e2eba033a4eb', 'photo-1623945439695-8bb0c459b8a7', 'photo-1624818145490-b385d0593e5d',
-  'photo-1628417099242-c702a666007d', 'photo-1628440622704-59047e272aed', 'photo-1628782379401-4fff9cdcbbfe',
-  'photo-1631045282678-e4712eaaa26e', 'photo-1631540771383-f0095283db6f', 'photo-1631551437792-ae5a0fb41c49',
-  'photo-1632923754832-60642c12a7ed', 'photo-1633483781030-e62d0da3944c', 'photo-1634729609334-10b9730a0f4b',
-  'photo-1644676654534-abc4f62ceee1', 'photo-1646579079791-29bc125e314a', 'photo-1651312166126-151f9f6810cb',
-  'photo-1651705179331-05e63a0be192', 'photo-1661175668117-15a9639069ec', 'photo-1666033402224-32e982c253f7',
-  'photo-1666036891074-308a989e07e1', 'photo-1666036891083-76aa582e381e', 'photo-1666036892004-9e755280328e',
-  'photo-1666113639188-f81ab5d3b2a1', 'photo-1666198045509-1917e86f61a4', 'photo-1669583639657-0c0e958e41e2',
-  'photo-1671610466725-8d903268ea46', 'photo-1673455747815-a77f61fdee39', 'photo-1673455748521-ab7536221420',
-  'photo-1680715363920-a9f9a767f794', 'photo-1682695794816-7b9da18ed470', 'photo-1682695795255-b236b1f1267d',
-  'photo-1686560357781-a4c9229a22e1', 'photo-1687074156266-1017210add9e', 'photo-1688489307652-4dfd79722a1b',
-  'photo-1688934728389-cec784f33964', 'photo-1690091859202-bdb64d738514', 'photo-1691723363567-520457d9bed7',
-  'photo-1693287528551-b3c3a6b28843', 'photo-1694282881698-d0197b47305e', 'photo-1697906842089-ec86a4646bfb',
-  'photo-1698362696286-c1557f477e96', 'photo-1699378537091-288035b4f478', 'photo-1700192569130-13f6b3dd0fca',
-  'photo-1700513742007-3308baa7b34c', 'photo-1700656106838-5a7d917d2678', 'photo-1701238973883-6c8b01439deb',
-  'photo-1703446592359-fefe8472cc79', 'photo-1703566567802-e1945c83f0cb', 'photo-1705442200049-3108c11574ea',
-  'photo-1710020329246-094bb7c76e98', 'photo-1710020332941-c53241d07dbc', 'photo-1710020340647-3912befb9425',
-  'photo-1714593216677-1051d87f6949', 'photo-1718154710424-d44de466c549', 'photo-1718891541630-97b7027c9452',
-  'photo-1719355399839-12f72314e5f5', 'photo-1728242510217-9e2b02654522', 'photo-1728667088041-ee116cf57c6c',
-  'photo-1731157414702-a3ebce2960ec', 'photo-1732130318657-c8740c0f5215', 'photo-1751475228879-17b45e640645',
-  'photo-1752087021698-df3e90af3fb2', 'photo-1752087022364-0882c43b1933', 'photo-1758438919146-f3f59a6d2544',
-  'photo-1760947580581-789c4e5c9868'
+  'photo-1418065460487-3e41a6c84dc5|TFyi0QOx08c', 'photo-1425913397330-cf8af2ff40a1|MMJx78V7xS8',
+  'photo-1429743305873-d4065c15f93e|u0vgcIOQG08', 'photo-1432298026442-0eabd0a98870|-RQ8tGcn2EY',
+  'photo-1437252611977-07f74518abd7|y4xZxzN754M', 'photo-1437964706703-40b90bdf563b|boE2xft0cAo',
+  'photo-1440342359743-84fcb8c21f21|19SC2oaVZW0', 'photo-1440581572325-0bea30075d9d|d6kSvT2xZQo',
+  'photo-1441974231531-c6227db76b6e|jFCViYFYcus', 'photo-1442120108414-42e7ea50d0b5|OWwK_0_EnxY',
+  'photo-1444703686981-a3abbc4d4fe3|oMpAz-DN-9I', 'photo-1444927714506-8492d94b4e3d|xJ2tjuUHD9M',
+  'photo-1445294211564-3ca59d999abd|zThTy8rPPsY', 'photo-1445711005973-54fe2a103826|74TufExdP3Y',
+  'photo-1445855743215-296f71d4b49c|ps2daRcXYes', 'photo-1445964047600-cdbdb873673d|CoD2Q92UaEg',
+  'photo-1446292532430-3e76f6ab6444|hS46bsAASwQ', 'photo-1448375240586-882707db888b|sp-p7uuT0tw',
+  'photo-1456346043496-935d8f0b4084|ZytVK5wm1K8', 'photo-1458966480358-a0ac42de0a7a|XBxQZLNBM0Q',
+  'photo-1462143338528-eca9936a4d09|7EqQ1s3wIAI', 'photo-1466854076813-4aa9ac0fc347|-g7axSVst6Y',
+  'photo-1470058869958-2a77ade41c02|qLW70Aoo8BE', 'photo-1470115636492-6d2b56f9146d|3Kv48NS4WUU',
+  'photo-1473448912268-2022ce9509d8|ESkw2ayO2As', 'photo-1475359524104-d101d02a042b|50bzI1F6urA',
+  'photo-1476231682828-37e571bc172f|qzgN45hseN0', 'photo-1476362555312-ab9e108a0b7e|BS-Uxe8wU5Y',
+  'photo-1480004902249-cdb28d6a01a4|niYTtTIR-u4', 'photo-1486707471592-8e7eb7e36f78|kbKEuU-YEIw',
+  'photo-1487525219605-eadb39ae229c|a2zdgkDzFo8', 'photo-1487621167305-5d248087c724|KT3WlrL_bsg',
+  'photo-1488330890490-c291ecf62571|aL7SA1ASVdQ', 'photo-1488645411773-a3b09ea07e29|7ZtPwmSKj6U',
+  'photo-1490100667990-4fced8021649|PXXtq6bp6cs', 'photo-1498408040764-ab6eb772a145|piNf3C4TViA',
+  'photo-1498429089284-41f8cf3ffd39|M6XC789HLe8', 'photo-1500215238115-1322078d92a3|KkqvVpfIzrU',
+  'photo-1500964757637-c85e8a162699|twukN12EN7c', 'photo-1501255184224-b8e069bca278|jQSmvesQMsY',
+  'photo-1501430654243-c934cec2e1c0|NLlvBb9sLts', 'photo-1501554894602-ef5eab1e72f2|4VgatlFyUpQ',
+  'photo-1502082553048-f009c37129b9|tGTVxeOr_Rs', 'photo-1502252430442-aac78f397426|OYFHT4X5isg',
+  'photo-1503453363464-743ee9ce1584|W51VK3Obcj0', 'photo-1503785640985-f62e3aeee448|nTRDnDdDYk8',
+  'photo-1504740359065-0173be5609b5|ogv44z6tQl4', 'photo-1505333201693-150bb240ef16|x3Z_YxnUh54',
+  'photo-1506452305024-9d3f02d1c9b5|SrASYZZpyjw', 'photo-1507139722691-cc2c94e3a2b2|x8xJpClTvR0',
+  'photo-1507371341162-763b5e419408|4hhP-Ud4e84', 'photo-1508025522233-ed33103769f5|QuZmcJ-n52E',
+  'photo-1508144322886-717c284ab392|A-fubu9QJxE', 'photo-1508255139162-e1f7b7288ab7|pF1ug8ysTtY',
+  'photo-1509099395498-a26c959ba0b7|yktwU2t1qHA', 'photo-1509316785289-025f5b846b35|L75D18aVal8',
+  'photo-1509992030181-1c99eb07dec8|8n3g1PFN9gs', 'photo-1511497584788-876760111969|-heLWtuAN3c',
+  'photo-1511884642898-4c92249e20b6|2Hzmz15wGik', 'photo-1514481043218-e965c5886f06|hZX_efxYt_M',
+  'photo-1515268064940-5150b7c29f35|rQqWOHZ96OM', 'photo-1515276427842-f85802d514a2|zwZusrYAGoM',
+  'photo-1515446134809-993c501ca304|xzPMUMDDsfk', 'photo-1516528387618-afa90b13e000|jqgsM3B9Fpo',
+  'photo-1516825994218-b2d93290b0fd|v1nLZZfQ-d8', 'photo-1517024785852-498ab0c02de5|ntOxPce8R5c',
+  'photo-1517157488732-b80ab10430e4|N_YtZaG6lhA', 'photo-1519567770579-c2fc5436bcf9|qwHHOC2z5Xs',
+  'photo-1520302630591-fd1c66edc19d|2MNFnPdsGyg', 'photo-1521706862577-47b053587f91|9G1kXjqOq4U',
+  'photo-1521938739809-0f40f1cfd90c|lfm4j1a-ev0', 'photo-1523712999610-f77fbcfc3843|RwHv7LgeC7s',
+  'photo-1524959725226-f4deb958e979|U-Dhokv9iXk', 'photo-1526025202335-cf944dc3f799|FmyIBz2JDHU',
+  'photo-1527642220350-24155bae0505|QnDPl6pxSWE', 'photo-1528183429752-a97d0bf99b5a|S297j2CsdlM',
+  'photo-1529511582893-2d7e684dd128|1dGMs4hhcVA', 'photo-1530049478161-0780526964f4|s4wGZw3UuLk',
+  'photo-1531252582519-2d7e6795be96|E9eZxxwxW-w', 'photo-1531390267619-48f1f162e3d2|ltTlPSxPB-Y',
+  'photo-1531756716853-09a60d38d820|TsXUChk1cKc', 'photo-1532211387405-12202cb81d7b|v-3NQ3pmWkY',
+  'photo-1532774979012-71b828494997|4IqTki_q8KI', 'photo-1532884928231-ef40895eb654|E0bj4Q53_Dw',
+  'photo-1533907650686-70576141c030|mNz9Pa3tz34', 'photo-1534711051555-054870a0e8f2|ESY3yWsC1wk',
+  'photo-1538506392157-218c11f95129|z6i_UCBuu5Q', 'photo-1538935732373-f7a495fea3f6|4OhFZSAT3sw',
+  'photo-1541637593725-923467404d17|uvQmacxnfcE', 'photo-1541959833400-049d37f98ccd|7zg5bnhm2X0',
+  'photo-1542273917363-3b1817f69a2d|ugnrXk1129g', 'photo-1564460549828-f0219a31bf90|BW9bM5UoLk4',
+  'photo-1564559259195-65c5a9ba6db7|dE7n95j9EcU', 'photo-1565178117145-41db4d572950|PVC9xNznhR8',
+  'photo-1568010967378-b92ea68220c5|jeq-mz11xAY', 'photo-1571161535093-e7642c4bd0c8|HpaDxLjg2kQ',
+  'photo-1572990485894-cf430d6c8715|GnAxlafPBl4', 'photo-1573126617899-41f1dffb196c|V1NVvXmO_dk',
+  'photo-1577193647731-2e0c1d04a565|L0nLG8t7zho', 'photo-1577209299418-485f60c0d4de|kEuew3XMeEA',
+  'photo-1580259679654-9276b39fd2d5|e5sp18O40yA', 'photo-1581825357620-908500d7b245|VOhERUMvTMM',
+  'photo-1583470790878-4f4f3811a01f|lDy1K7RkLeA', 'photo-1583642037383-861ac716c3f0|OoULo8WHNtY',
+  'photo-1586061968253-7bf5724aab7b|juVccM81b_E', 'photo-1586094332115-680788e0182f|wSEv7Nanuxc',
+  'photo-1586275381277-ef645628e280|8YPdzxwzEXE', 'photo-1586275381609-45bb8e2ee08c|4yi6vepmAlg',
+  'photo-1586581277029-5769487f3881|PD80JeCSJf4', 'photo-1586957469525-7850e7bef283|6xxxvB72qB0',
+  'photo-1592275788122-970c9583048a|8Sopdzh-sPo', 'photo-1592859600972-1b0834d83747|H8vhhepiiaU',
+  'photo-1593013174963-be2185e98a6c|-sUgs6NLFpE', 'photo-1593429474506-005c2cbebbfe|5_BtxiWMsC4',
+  'photo-1593455071238-92dd081a39b1|cUY7u2Fskk4', 'photo-1594842059196-5b6b8fa73187|CQbaooHFSWQ',
+  'photo-1594845222818-9097c52dabb5|t1j-1GdWNgo', 'photo-1595668379004-4565dc72e10f|GHmkQztBoC8',
+  'photo-1595976281013-8024ecc02575|vp1H5ODSsc8', 'photo-1596987851982-3b90e09ab4ac|ua0SnGdN-m8',
+  'photo-1597201423947-3e0028337902|g41ZkoO75rE', 'photo-1598358214378-3f0ca65e5318|pKWWWd5SVJw',
+  'photo-1598997898925-cfb4b5106f4b|Q6UdPQ0Rbdo', 'photo-1600333591199-1c7f60b0c6a8|abDPQtcEtUQ',
+  'photo-1601281426795-9fedf41df8d1|6yPiMRZzFH0', 'photo-1601607924234-fd2638f672b5|dM3hYpeUmBc',
+  'photo-1602298674761-700e96568f5f|VDPFEyIrAn0', 'photo-1602557089158-f91c696af5fd|YfuhiAIy5e0',
+  'photo-1603044236937-882428dd6a19|MoFVf7asDaU', 'photo-1604213410393-89f141bb96b8|g3PyXO4A0yc',
+  'photo-1604223190546-a43e4c7f29d7|ibikgDapcp4', 'photo-1604342767712-f7448911dc51|_3DI_vx2ygg',
+  'photo-1604488277305-817b4add03dc|D2SQc6ENhZc', 'photo-1605196560547-b2f7281b7355|Jlba19sPjdM',
+  'photo-1609428538208-e3dda29ec2e1|YTbWJd6UV8E', 'photo-1609428539144-01d21dda700c|2RGH9dw1-Ks',
+  'photo-1610147323479-a7fb11ffd5dd|OJ02cQHePds', 'photo-1610375952728-224767d9325b|1efs360VN5I',
+  'photo-1610552050890-fe99536c2615|s-y2HJElONo', 'photo-1611080402167-ed75bae6df32|rj6P1M_fz6M',
+  'photo-1611222566512-cb8dd8e689e5|efm0EirfOBQ', 'photo-1611223157162-e4cb1419a7d6|adLo80F_9P0',
+  'photo-1612441804231-77a36b284856|I_n_b44cqhk', 'photo-1612539473441-dfc1cefd5e1e|evJh_sTH0b8',
+  'photo-1613985212734-166ffb5a513d|50hhiZf9vI0', 'photo-1615094401770-713fecd4695a|ytsYMo1ciWo',
+  'photo-1617159156637-dfb8655c9f95|ws_3EbGtB2g', 'photo-1620452172311-2a17a5c9c35a|2CY5P28RdDI',
+  'photo-1620870300436-a70b605f6ebe|GfmN7MB8FdY', 'photo-1621769507764-a9b056cf2d8a|k79MtOSivNs',
+  'photo-1621848296279-7751546e9acc|uYoVf9I6ANI', 'photo-1622003842218-e2eba033a4eb|oMOQUknpQc4',
+  'photo-1623945439695-8bb0c459b8a7|N_F5pdGizvw', 'photo-1624818145490-b385d0593e5d|sHq15rZgo1g',
+  'photo-1628417099242-c702a666007d|Qc33z_J7iUo', 'photo-1628440622704-59047e272aed|qQxWAnfhUA8',
+  'photo-1628782379401-4fff9cdcbbfe|RmWkrjjz2J4', 'photo-1631045282678-e4712eaaa26e|zdFWCf54LTA',
+  'photo-1631540771383-f0095283db6f|UHKzKzly8RA', 'photo-1631551437792-ae5a0fb41c49|h1XfMnlRQOY',
+  'photo-1632923754832-60642c12a7ed|fsJ0basri8U', 'photo-1633483781030-e62d0da3944c|5usLKNEhPB0',
+  'photo-1634729609334-10b9730a0f4b|h6ssqK1AOVM', 'photo-1644676654534-abc4f62ceee1|ojFeqwArP2Y',
+  'photo-1646579079791-29bc125e314a|KcfHy4K8LTs', 'photo-1651312166126-151f9f6810cb|vJXyCee5nEs',
+  'photo-1651705179331-05e63a0be192|wF3jEvxQy8Q', 'photo-1661175668117-15a9639069ec|L6ebyYq3e0A',
+  'photo-1666033402224-32e982c253f7|PPTQyCVx22w', 'photo-1666036891074-308a989e07e1|5HfN2xAIM7k',
+  'photo-1666036891083-76aa582e381e|Hiv-fkF4cQ4', 'photo-1666036892004-9e755280328e|0dvt9OxS-4A',
+  'photo-1666113639188-f81ab5d3b2a1|0ZvZQSYAG6s', 'photo-1666198045509-1917e86f61a4|PYdcxA2E9g0',
+  'photo-1669583639657-0c0e958e41e2|vaJPLse2l4Q', 'photo-1671610466725-8d903268ea46|ao2E6IZtPFQ',
+  'photo-1673455747815-a77f61fdee39|6D7XqFt4Rv8', 'photo-1673455748521-ab7536221420|Jqqp0YZTxM0',
+  'photo-1680715363920-a9f9a767f794|lgbawoqfrdk', 'photo-1682695794816-7b9da18ed470|xXqWVUvf_Gw',
+  'photo-1682695795255-b236b1f1267d|9633dHhioC8', 'photo-1686560357781-a4c9229a22e1|ztz1wHPMQDE',
+  'photo-1687074156266-1017210add9e|L5NJd1YVUzc', 'photo-1688489307652-4dfd79722a1b|oZY8d8Qinig',
+  'photo-1688934728389-cec784f33964|bkgrGrrAtJ4', 'photo-1690091859202-bdb64d738514|qkKdItLHvCs',
+  'photo-1691723363567-520457d9bed7|MalFZf6b6kw', 'photo-1693287528551-b3c3a6b28843|AFWSdP8Ntaw',
+  'photo-1694282881698-d0197b47305e|wECBJIxVaNw', 'photo-1697906842089-ec86a4646bfb|mgVVofFI9WE',
+  'photo-1698362696286-c1557f477e96|jSNeintr8uQ', 'photo-1699378537091-288035b4f478|tx_tC07l3Qg',
+  'photo-1700192569130-13f6b3dd0fca|OCTMV97N_5A', 'photo-1700513742007-3308baa7b34c|zA-Sqb0vk-E',
+  'photo-1700656106838-5a7d917d2678|D7avZZXM0S0', 'photo-1701238973883-6c8b01439deb|36azBl8rAEg',
+  'photo-1703446592359-fefe8472cc79|Vs5ciaxG1Cs', 'photo-1703566567802-e1945c83f0cb|vQKXEfXBSZk',
+  'photo-1705442200049-3108c11574ea|NYYZ5UOXNW4', 'photo-1710020329246-094bb7c76e98|BZ-ZY3YLkfo',
+  'photo-1710020332941-c53241d07dbc|hfG-uokKeqg', 'photo-1710020340647-3912befb9425|HRjrvmGaI8M',
+  'photo-1714593216677-1051d87f6949|6s4DOKaE9nc', 'photo-1718154710424-d44de466c549|Kdv_L0dPn54',
+  'photo-1718891541630-97b7027c9452|ALFL1XaTxqE', 'photo-1719355399839-12f72314e5f5|B9P9OiHkMA0',
+  'photo-1728242510217-9e2b02654522|RkBJnCC3sFQ', 'photo-1728667088041-ee116cf57c6c|rn0nE809hmg',
+  'photo-1731157414702-a3ebce2960ec|Be9g2Qe_-CY', 'photo-1732130318657-c8740c0f5215|upR8raSXvwg',
+  'photo-1751475228879-17b45e640645|KMrIJ6hiHJE', 'photo-1752087021698-df3e90af3fb2|deQ18-GPrls',
+  'photo-1752087022364-0882c43b1933|nTcdkFIgc5g', 'photo-1758438919146-f3f59a6d2544|tShk_bW2PtU',
+  'photo-1759681770982-313332e7f42c|owcJsiIK7UU', 'photo-1760947580581-789c4e5c9868|2nHnDRmjVxM'
 ];
 /* Draw without replacement: the pool is walked in a shuffled order and every
    photo appears once before any repeats. Independent random draws feel rigged
@@ -1314,7 +1357,7 @@ const DEMOS=[
    handful of clicks. The bag outlives the tab, otherwise each visit would
    restart a fresh permutation and the opening photo would recur far too often. */
 const BAG='depthgram-bag';
-let lastDemo=-1;
+let lastDemo=-1, demoPage=null;
 
 function refillBag(){
   const bag=[...DEMOS.keys()];
@@ -1339,7 +1382,11 @@ function demoURL(){
   if(!bag) bag=refillBag();
   lastDemo=bag.pop();
   try{ localStorage.setItem(BAG, JSON.stringify({n:DEMOS.length, bag})); }catch(e){}
-  return 'https://images.unsplash.com/'+DEMOS[lastDemo]+'?w=1400&q=80&fm=jpg';
+  const [token, id]=DEMOS[lastDemo].split('|');
+  /* Unsplash asks referrers to carry these, and it is how the photographer
+     sees the traffic this page sends them. */
+  demoPage='https://unsplash.com/photos/'+id+'?utm_source=depthgram&utm_medium=referral';
+  return 'https://images.unsplash.com/'+token+'?w=1400&q=80&fm=jpg';
 }
 async function loadDemo(){
   try{
@@ -1445,6 +1492,7 @@ async function load(f, tag){
     showCoach();
     $('export').disabled=false;
     $('credit').hidden = tag!=='demo';
+    if(tag==='demo' && demoPage) $('creditlink').href=demoPage;
     ready=true; progress(null);
     say((tag==='sample'?'Built-in scene':tag==='demo'?'Unsplash photo':'Photo')
       +' · '+cw+' × '+ch+' · focus and motion range measured from the depth map.');

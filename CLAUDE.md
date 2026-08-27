@@ -61,6 +61,14 @@ machine and break on someone else's.
 - **Eye convention:** `cam.x = +1` is the right eye (near planes slide left on screen),
   `-1` the left. The anaglyph puts left-eye luminance in the red channel (half-colour),
   the stereo pair is parallel SBS. Swapping either inverts perceived depth for users.
+- **A `DEMOS` entry is `cdnToken|photoId`.** The token serves the pixels, the
+  eleven-character id is what the credit link points at. Ids can contain dashes
+  and underscores, so never parse one out of a slug by splitting on a dash; take
+  the last eleven characters. Every new entry must be fetched at the app's own
+  URL shape first: premium photos 404 there.
+- **The shuffle bag keys off `DEMOS.length`.** Editing the pool invalidates the
+  stored indices, and the stored `n` is what detects that. Never renumber the
+  pool without letting the length change, or stale indices survive.
 - **`STORE` is versioned** (`depthgram-v4`). Any change to the shape of `P` bumps the
   suffix; stale schemas must never be migrated in place.
 - **Depth statistics drive UX.** `autoFocus()` is a centre-weighted high percentile
