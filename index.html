@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Depthgram | Free 3D Photo Effect &amp; Depth Map Generator</title>
+<meta name="description" content="Turn any photo into a 3D parallax animation, depth map, or red-cyan anaglyph. Free, in your browser. No upload, no sign-up, no watermark.">
+<meta name="keywords" content="3d photo effect, depth map generator, anaglyph maker, 2.5d parallax, photo to 3d, depth anything, free online tool">
+<link rel="canonical" href="https://depthgram.com/">
+<meta name="theme-color" content="#0B0B0C">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Depthgram">
+<meta property="og:title" content="Depthgram: 3D Photos from Any Image, Free and Private">
+<meta property="og:description" content="Drop a photo, get an animated 3D scene. AI depth runs in your browser and nothing is uploaded. Export depth maps, anaglyphs, stereo pairs and looping videos.">
+<meta property="og:url" content="https://depthgram.com/">
+<meta property="og:image" content="https://depthgram.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Depthgram: 3D Photos from Any Image, Free and Private">
+<meta name="twitter:description" content="Drop a photo, get an animated 3D scene. AI depth runs in your browser and nothing is uploaded.">
+<meta name="twitter:image" content="https://depthgram.com/og.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://huggingface.co" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Depthgram",
+  "url": "https://depthgram.com/",
+  "description": "Turn any photo into an animated 3D parallax scene with AI depth estimation that runs entirely in your browser. Export depth maps, red/cyan anaglyphs, stereo pairs and looping videos. No upload, no account, free.",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires WebGL 2",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<style>
+:root{
+  --accent:#0A84FF;
+  --green:#30D158; --red:#FF453A; --orange:#FF9F0A;
+  --radius:22px;
+
+  --ink:rgba(255,255,255,.94);
+  --label:rgba(255,255,255,.58);
+  --faint:rgba(255,255,255,.36);
+  --glass:rgba(255,255,255,.06);
+  --glass-2:rgba(255,255,255,.11);
+  --glass-3:rgba(255,255,255,.16);
+  --stroke:rgba(255,255,255,.13);
+  --stroke-2:rgba(255,255,255,.07);
+  --track:rgba(255,255,255,.14);
+  --shadow:0 20px 60px rgba(0,0,0,.55);
+  --page:#0B0B0C;
+
+  --sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--page); color:var(--ink);
+  font:400 15px/1.5 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* Colour behind the glass: without something to refract, backdrop-filter
+   has nothing to do. */
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--page)}
+.bg i{position:absolute;display:block;border-radius:50%;filter:blur(140px);background:#fff}
+.bg .b1{width:60vw;height:60vw;left:-18vw;top:-26vw;opacity:.075}
+.bg .b2{width:52vw;height:52vw;right:-16vw;top:2vh;opacity:.05}
+.bg .b3{width:64vw;height:64vw;left:24vw;bottom:-40vw;opacity:.035}
+
+
+.app{max-width:1320px;margin:0 auto;padding:34px 24px 64px}
+
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:26px;font-weight:700;letter-spacing:-.021em}
+.tagline{font-size:15px;color:var(--label);letter-spacing:-.01em}
+header .grow{flex:1}
+.badge{
+  font:500 12px/1 var(--mono);color:var(--label);letter-spacing:.01em;
+  padding:7px 12px;border-radius:999px;background:var(--glass);
+  border:.5px solid var(--stroke);backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+}
+
+.banner{
+  display:none;margin-bottom:18px;padding:13px 16px;border-radius:14px;
+  background:color-mix(in srgb,var(--orange) 16%,transparent);
+  border:.5px solid color-mix(in srgb,var(--orange) 45%,transparent);
+  font-size:14px;
+}
+.banner.show{display:block}
+.banner code{font:500 13px var(--mono);color:var(--orange)}
+
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+@media (max-width:1000px){main{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------------------------------------------------------------- stage */
+.viewer{
+  position:relative;overflow:hidden;
+  aspect-ratio:var(--ar,16/10);
+  border-radius:var(--radius);
+  background:rgba(0,0,0,.55);
+  border:.5px solid var(--stroke);
+  box-shadow:var(--shadow);
+  display:flex;align-items:center;justify-content:center;
+}
+.viewer canvas{display:block;width:100%;height:100%;touch-action:pan-y}
+.viewer:fullscreen{
+  aspect-ratio:auto;width:100vw;height:100vh;
+  border:0;border-radius:0;box-shadow:none;background:#000;
+}
+.drop{
+  position:absolute;inset:14px;border-radius:calc(var(--radius) - 8px);
+  border:1.5px dashed var(--stroke);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;text-align:center;padding:24px;
+  transition:border-color .2s,background .2s,opacity .6s ease,visibility .6s;
+}
+.drop.gone{opacity:0;visibility:hidden;pointer-events:none}
+.drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.viewer.over{outline:2px solid var(--accent);outline-offset:-2px}
+.drop strong{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.drop span{font-size:14px;color:var(--label)}
+
+.bar{height:3px;border-radius:2px;background:var(--track);overflow:hidden;margin-top:12px;display:none}
+.bar.show{display:block}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .18s linear}
+
+.meta{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-top:12px;min-height:20px}
+.status{font-size:13px;color:var(--label);letter-spacing:-.005em}
+.status.err{color:var(--red)}
+.credit{font-size:13px;color:var(--faint)}
+.credit a{color:var(--label)}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.toolbar .grow{flex:1}
+.keys{margin-top:12px;font:500 12px var(--mono);color:var(--faint);letter-spacing:.02em}
+
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  font:500 14px var(--sans);letter-spacing:-.01em;color:var(--ink);
+  padding:9px 15px;border-radius:12px;cursor:pointer;
+  background:var(--glass);border:.5px solid var(--stroke);
+  backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
+  transition:background .18s,transform .12s;
+}
+.btn:hover{background:var(--glass-2)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:2px}
+.btn svg{width:15px;height:15px;flex:none;opacity:.85}
+.btn.primary svg{opacity:1}
+.drop svg{width:34px;height:34px;opacity:.4;margin-bottom:8px}
+
+/* First-run coach: shows the two states of the camera rather than describing
+   them. Retires itself the moment the pointer actually enters the frame. */
+.coach{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  opacity:0;transition:opacity .45s ease;
+}
+.coach.on{opacity:1}
+.coach .ghost{
+  position:absolute;width:24px;height:24px;margin:-4px 0 0 -4px;
+  color:#fff;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));
+  animation:ghost 13s cubic-bezier(.45,0,.55,1) infinite;
+}
+.coach .ring{
+  position:absolute;width:44px;height:44px;margin:-14px 0 0 -14px;
+  border-radius:50%;border:1.5px solid rgba(255,255,255,.5);
+  animation:ghost 13s cubic-bezier(.45,0,.55,1) infinite, ringPulse 2.1s ease-in-out infinite;
+}
+.coach .cap{
+  position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+  display:grid;white-space:nowrap;
+  padding:9px 18px;border-radius:999px;
+  background:rgba(20,20,22,.6);border:.5px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);
+}
+.coach .cap span{
+  grid-area:1/1;text-align:center;
+  font:500 13.5px var(--sans);letter-spacing:-.01em;color:#fff;
+  animation:cap 13s linear infinite;
+}
+.coach .cap .b{animation-delay:-6.5s}
+@keyframes ghost{
+  0%   {left:32%; top:64%; opacity:0}
+  5%   {left:32%; top:64%; opacity:1}
+  18%  {left:67%; top:36%; opacity:1}
+  30%  {left:41%; top:29%; opacity:1}
+  42%  {left:56%; top:57%; opacity:1}
+  50%  {left:56%; top:57%; opacity:1}
+  70%  {left:113%; top:50%; opacity:0}
+  100% {left:113%; top:50%; opacity:0}
+}
+/* A gap rather than a crossfade, so the two lines never sit on top of
+   each other. */
+@keyframes cap{
+  0%,38%   {opacity:1}
+  46%,96%  {opacity:0}
+  100%     {opacity:1}
+}
+@keyframes ringPulse{
+  0%,100%{transform:scale(.72);opacity:.5}
+  50%    {transform:scale(1);opacity:.15}
+}
+@media (prefers-reduced-motion:reduce){
+  .coach .ghost,.coach .ring{animation:none;left:56%;top:57%;opacity:1}
+  .coach .cap .b{display:none}
+}
+
+/* Full-screen HUD. The side panel is gone in full screen, so the two controls
+   you actually reach for while watching live here instead. Auto-hides. */
+.hud{
+  position:absolute;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);
+  display:none;gap:6px;padding:6px;border-radius:999px;z-index:3;
+  background:rgba(20,20,22,.55);border:.5px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+  opacity:0;transition:opacity .3s ease,transform .3s ease;
+}
+.viewer:fullscreen .hud{display:flex}
+.hud.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.hud button{
+  display:inline-flex;align-items:center;gap:6px;
+  font:500 13.5px var(--sans);letter-spacing:-.01em;color:#fff;
+  padding:8px 14px;border-radius:999px;cursor:pointer;
+  background:transparent;border:0;transition:background .18s;
+}
+.hud button:hover{background:rgba(255,255,255,.12)}
+.hud button svg{width:15px;height:15px;flex:none;opacity:.9}
+.hud button[aria-pressed=true]{background:var(--accent)}
+.hud button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+.btn.primary:hover{background:color-mix(in srgb,var(--accent) 85%,white)}
+
+/* export popover */
+.exp{position:relative;display:inline-flex}
+.menu{
+  position:absolute;right:0;bottom:calc(100% + 8px);z-index:5;min-width:230px;
+  display:flex;flex-direction:column;padding:6px;border-radius:14px;
+  background:rgba(28,28,30,.92);border:.5px solid var(--stroke);
+  backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
+  box-shadow:var(--shadow);
+}
+.menu[hidden]{display:none}
+.menu button{
+  display:flex;align-items:center;gap:9px;text-align:left;
+  font:500 14px var(--sans);letter-spacing:-.01em;color:var(--ink);
+  padding:9px 11px;border:0;border-radius:9px;background:none;cursor:pointer;
+}
+.menu button:hover{background:var(--glass-2)}
+.menu button svg{width:15px;height:15px;flex:none;opacity:.8}
+.menu button small{margin-left:auto;font:500 11px var(--mono);color:var(--faint)}
+.menu button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* ---------------------------------------------------------------- panels */
+aside{display:flex;flex-direction:column;gap:16px}
+.panel{
+  border-radius:var(--radius);padding:18px;
+  background:var(--glass);border:.5px solid var(--stroke);
+  backdrop-filter:blur(34px) saturate(180%);-webkit-backdrop-filter:blur(34px) saturate(180%);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.panel h2{
+  font-size:13px;font-weight:600;letter-spacing:-.005em;color:var(--label);
+  margin-bottom:14px;
+}
+.field + .field{margin-top:16px;padding-top:16px;border-top:.5px solid var(--stroke-2)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
+.head label{font-size:14px;font-weight:500;letter-spacing:-.01em}
+.num{font:500 14px var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.num.good{color:var(--green)} .num.warn{color:var(--orange)} .num.info{color:var(--accent)}
+.note{font-size:12px;color:var(--faint);margin-top:8px;line-height:1.45}
+
+/* iOS-style slider */
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:26px;cursor:grab;
+  background:transparent;display:block;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:5px;border-radius:3px;
+  background:linear-gradient(90deg,var(--accent) var(--p,50%),var(--track) var(--p,50%));
+}
+input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:var(--track)}
+input[type=range]::-moz-range-progress{height:5px;border-radius:3px;background:var(--accent)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;
+  margin-top:-7.5px;box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 .5px rgba(0,0,0,.06);
+}
+input[type=range]::-moz-range-thumb{
+  width:20px;height:20px;border:0;border-radius:50%;background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+input[type=range]:active{cursor:grabbing}
+input[type=range]:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:4px;border-radius:4px}
+
+/* segmented control with a sliding indicator */
+.seg{
+  position:relative;display:grid;grid-template-columns:repeat(var(--n),1fr);
+  padding:3px;border-radius:12px;background:var(--glass-3);
+  border:.5px solid var(--stroke-2);
+}
+.seg .ind{
+  position:absolute;top:3px;bottom:3px;left:3px;
+  width:calc((100% - 6px)/var(--n));
+  transform:translateX(calc(var(--i,0) * 100%));
+  border-radius:9px;background:var(--glass-2);
+  border:.5px solid var(--stroke);
+  box-shadow:0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.14);
+  transition:transform .34s cubic-bezier(.32,.72,0,1);
+  pointer-events:none;
+}
+.seg button{
+  position:relative;z-index:1;font:500 13px var(--sans);letter-spacing:-.01em;
+  padding:7px 4px;border:0;background:none;color:var(--label);cursor:pointer;border-radius:9px;
+  transition:color .2s;
+}
+.seg button[aria-pressed=true]{color:var(--ink)}
+.seg button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent)}
+
+/* iOS-style switch */
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:3px 0}
+.sw + .sw{margin-top:10px}
+.sw span{font-size:14px;font-weight:500;letter-spacing:-.01em}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw i{
+  flex:none;width:50px;height:30px;border-radius:999px;background:var(--track);
+  position:relative;transition:background .26s cubic-bezier(.32,.72,0,1);
+}
+.sw i::after{
+  content:'';position:absolute;top:2px;left:2px;width:26px;height:26px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);
+  transition:transform .3s cubic-bezier(.32,.72,0,1);
+}
+.sw input:checked + i{background:var(--green)}
+.sw input:checked + i::after{transform:translateX(20px)}
+.sw input:focus-visible + i{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:3px}
+
+.mini{
+  font:500 12px var(--sans);color:var(--accent);background:none;border:0;cursor:pointer;
+  padding:2px 6px;border-radius:7px;
+}
+.mini:hover{background:var(--glass-3)}
+
+.scope{margin-top:14px}
+.scope canvas{display:block;width:100%;height:108px;border-radius:12px;background:var(--glass-3)}
+.scope .key{
+  display:flex;justify-content:space-between;gap:8px;margin-top:8px;
+  font:500 12px var(--mono);color:var(--faint);font-variant-numeric:tabular-nums;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .seg .ind,.sw i,.sw i::after,.btn{transition:none}
+}
+
+footer{
+  margin-top:34px;padding-top:18px;border-top:.5px solid var(--stroke-2);
+  display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;
+  font-size:13px;color:var(--faint);
+}
+footer .priv{color:var(--label)}
+footer a{color:var(--label);text-decoration:none}
+footer a:hover{text-decoration:underline}
+footer .grow{flex:1}
+
+/* ---------------------------------------------------------------- mobile */
+@media (max-width:1000px){
+  main{gap:16px}
+  aside{gap:12px}
+  /* Cap the frame so the controls are reachable without a long scroll; the
+     cover fit crops rather than letterboxing, so this stays sharp. */
+  .viewer{max-height:56vh}
+}
+@media (max-width:640px){
+  .app{padding:18px 14px calc(40px + env(safe-area-inset-bottom))}
+  header{gap:6px;margin-bottom:14px}
+  h1{font-size:22px;width:100%}
+  .tagline{font-size:14px;width:100%}
+  header .grow{display:none}
+  .badge{font-size:11px;padding:6px 10px;order:3;margin-top:2px}
+  .viewer{border-radius:16px;max-height:46vh}
+  .panel{padding:15px;border-radius:18px}
+  .toolbar .grow{display:none}
+  .toolbar{gap:7px}
+  .btn{flex:1 1 auto;justify-content:center;min-height:44px;padding:10px 14px}
+  .btn#micro{flex:0 0 auto}
+  .meta{font-size:13px}
+  .coach .cap{white-space:normal;max-width:78vw;text-align:center;bottom:12px}
+  .coach .cap span{font-size:12.5px}
+}
+/* Touch: bigger grab targets, and the keyboard legend is dead weight. */
+@media (pointer:coarse){
+  input[type=range]{height:38px}
+  input[type=range]::-webkit-slider-thumb{width:26px;height:26px;margin-top:-10.5px}
+  input[type=range]::-moz-range-thumb{width:26px;height:26px}
+  .seg button{padding:11px 4px}
+  .sw{padding:6px 0}
+  .keys{display:none}
+  .mini{padding:6px 10px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+
+<div class="app">
+
+<header>
+  <h1>Depthgram</h1>
+  <p class="tagline">Depth-mapped 3D from a single photo</p>
+  <span class="grow"></span>
+  <span class="badge" id="env">Checking display&hellip;</span>
+</header>
+
+<div class="banner" id="banner">
+  This page was opened from <code>file://</code>. The depth model needs a real origin. Run
+  <code>python3 -m http.server</code> in this folder, then open <code>localhost:8000</code>.
+</div>
+
+<main>
+  <section>
+    <div class="viewer" id="viewer">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Open a photo">
+        <span data-icon="photo"></span>
+        <strong>Drop a Photo Here</strong>
+        <span>Or click to browse, or paste from the clipboard</span>
+      </div>
+      <div class="coach" id="coach" aria-hidden="true">
+        <span class="ring"></span>
+        <span class="ghost" data-icon="cursor"></span>
+        <div class="cap">
+          <span class="a">Move the pointer over the photo to look around</span>
+          <span class="b">Take it off the photo and the camera drifts on its own</span>
+        </div>
+      </div>
+      <div class="hud" id="hud">
+        <button id="hud-ptr" data-icon="cursor" aria-pressed="true">Follow Pointer</button>
+        <button id="hud-play" data-icon="pause">Pause</button>
+        <button id="hud-exit" data-icon="collapse">Exit</button>
+      </div>
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+
+    <div class="bar" id="bar"><i id="barfill"></i></div>
+
+    <div class="meta">
+      <p class="status" id="status" role="status"></p>
+      <p class="credit" id="credit" hidden>Photo via <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn primary" id="open" data-icon="photo">Open Photo&hellip;</button>
+      <button class="btn" id="demo" data-icon="shuffle">Random Photo</button>
+      <button class="btn" id="play" data-icon="pause">Pause</button>
+      <button class="btn" id="full" data-icon="expand">Full Screen</button>
+      <span class="grow"></span>
+      <button class="btn" id="share" data-icon="share">Share</button>
+      <div class="exp">
+        <button class="btn" id="export" data-icon="download" disabled aria-haspopup="true" aria-expanded="false">Export</button>
+        <div class="menu" id="exportmenu" hidden role="menu">
+          <button data-x="frame" data-icon="photo" role="menuitem">Image<small>PNG</small></button>
+          <button data-x="depth" data-icon="layers" role="menuitem">Depth Map<small>PNG</small></button>
+          <button data-x="anaglyph" data-icon="glasses" role="menuitem">Anaglyph<small>red/cyan</small></button>
+          <button data-x="stereo" data-icon="stereo" role="menuitem">Stereo Pair<small>SBS</small></button>
+          <button data-x="clip" data-icon="film" role="menuitem">Looping Clip<small id="clipfmt">video</small></button>
+        </div>
+      </div>
+    </div>
+
+    <p class="keys">Space play · D view · P pointer · F full screen · R reset</p>
+  </section>
+
+  <aside>
+    <div class="panel">
+      <h2>Motion</h2>
+
+      <div class="field">
+        <div class="head"><label>Camera Path</label></div>
+        <div class="seg" id="seg" style="--n:3;--i:0">
+          <span class="ind"></span>
+          <button data-p="orbit" aria-pressed="true">Orbit</button>
+          <button data-p="lateral" aria-pressed="false">Lateral</button>
+          <button data-p="still" aria-pressed="false">Still</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="head">
+          <label for="amp">Motion Range</label>
+          <span><button class="mini" id="autoamp">Auto</button><span class="num good" id="ampv">16 px</span></span>
+        </div>
+        <input type="range" id="amp" min="0" max="1000" step="1" value="500">
+        <p class="note" id="ampsub">Peak shift of the nearest plane.</p>
+      </div>
+
+      <div class="field">
+        <div class="head"><label for="hz">Speed</label><span class="num" id="hzv">0.39 Hz</span></div>
+        <input type="range" id="hz" min="0" max="1000" step="1" value="353">
+        <p class="note" id="hzsub">One sweep per cycle.</p>
+        <div class="toolbar" style="margin-top:10px">
+          <button class="btn" id="micro" data-icon="wave" style="padding:7px 12px;font-size:13px">Micro Sway (24 Hz)</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="head"><label for="rel">Depth Exaggeration</label><span class="num" id="relv">2.40&times;</span></div>
+        <input type="range" id="rel" min="1" max="4" step="0.05" value="2.4">
+        <p class="note">Steepens depth around the focus plane without clipping either end.</p>
+      </div>
+
+      <div class="field">
+        <div class="head">
+          <label for="piv">Focus Depth</label>
+          <span><button class="mini" id="autopiv">Auto</button><span class="num" id="pivv">0.50</span></span>
+        </div>
+        <input type="range" id="piv" min="0" max="1" step="0.01" value="0.5">
+        <p class="note" id="pivsub">The plane that stays pinned.</p>
+      </div>
+
+      <div class="scope">
+        <canvas id="scope" width="620" height="216" aria-label="Camera path and displacement"></canvas>
+        <div class="key"><span id="k1">Idle</span><span id="k2"></span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Rendering</h2>
+
+      <div class="field">
+        <div class="head"><label for="lay">Depth Layers</label><span class="num" id="layv">125</span></div>
+        <input type="range" id="lay" min="2" max="192" step="1" value="125">
+        <p class="note" id="laysub">Depth is cut into this many planes.</p>
+      </div>
+
+      <div class="field">
+        <div class="head"><label>View</label></div>
+        <div class="seg" id="view" style="--n:3;--i:0">
+          <span class="ind"></span>
+          <button data-v="0" aria-pressed="true">Parallax</button>
+          <button data-v="1" aria-pressed="false">Depth Map</button>
+          <button data-v="2" aria-pressed="false">Split</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="sw"><span>Follow Pointer</span><input type="checkbox" id="cue-pointer" checked><i></i></label>
+        <label class="sw"><span>Depth of Field</span><input type="checkbox" id="cue-dof"><i></i></label>
+      </div>
+
+      <div class="field">
+        <div class="toolbar"><button class="btn" id="reset" data-icon="reset">Reset to Defaults</button></div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <span class="priv">Private by design: the AI runs in your browser and photos never leave your device.</span>
+  <span class="grow"></span>
+  <a href="https://github.com/depthgram/depthgram" target="_blank" rel="noopener">Open source · GPLv3</a>
+  <span>Depth by <a href="https://depth-anything-v2.github.io" target="_blank" rel="noopener">Depth Anything V2</a></span>
+</footer>
+
+</div>
+
+<script type="module">
+import { pipeline, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
+
+const $ = id => document.getElementById(id);
+
+/* Inline so the page stays self-contained; stroked at SF Symbols' weight. */
+const ICONS={
+  photo:'<rect x="2.5" y="4" width="15" height="12" rx="2.5"/><circle cx="7" cy="8.4" r="1.3"/><path d="M3 14.2l4-3.8 2.8 2.7 3.4-3.4 4 3.9"/>',
+  shuffle:'<path d="M3 6.2h2.7c1.5 0 2.3 1.1 3.1 2.4s1.6 2.4 3.1 2.4h2.3"/><path d="M3 11h2.7c1.5 0 2.3-1.1 3.1-2.4s1.6-2.4 3.1-2.4h2.3"/><path d="M12.7 4.2l2.3 2-2.3 2"/><path d="M12.7 9l2.3 2-2.3 2"/>',
+  sparkles:'<path d="M9.2 3.2l1.25 3.3 3.3 1.25-3.3 1.25-1.25 3.3-1.25-3.3L4.65 7.75l3.3-1.25z" stroke-linejoin="round"/><path d="M14.6 12.2l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" stroke-linejoin="round"/>',
+  play:'<path d="M6.8 4.4l8.4 5.6-8.4 5.6z" stroke-linejoin="round"/>',
+  pause:'<path d="M7.2 4.6v10.8M12.8 4.6v10.8"/>',
+  expand:'<path d="M3.2 7.4V3.2h4.2M16.8 7.4V3.2h-4.2M3.2 12.6v4.2h4.2M16.8 12.6v4.2h-4.2"/>',
+  collapse:'<path d="M7.4 3.2v4.2H3.2M12.6 3.2v4.2h4.2M7.4 16.8v-4.2H3.2M12.6 16.8v-4.2h4.2"/>',
+  download:'<path d="M10 3.4v8.4M6.6 8.8L10 12.2l3.4-3.4M3.6 16.2h12.8"/>',
+  layers:'<path d="M10 3.2l6.6 3.3-6.6 3.3-6.6-3.3z" stroke-linejoin="round"/><path d="M3.4 10.2l6.6 3.3 6.6-3.3M3.4 13.4l6.6 3.3 6.6-3.3"/>',
+  reset:'<path d="M16.3 10a6.3 6.3 0 1 1-1.95-4.55"/><path d="M16.6 2.9v3.4h-3.4"/>',
+  wave:'<path d="M2.6 10h2.1l1.6-4.6L8.6 15l1.9-6.6 1.5 3.2h5.4"/>',
+  cursor:'<path d="M4.2 2.6l11.4 6.9-4.9.9-2.3 4.6z" fill="currentColor" stroke-linejoin="round"/>',
+  share:'<path d="M10 12.6V3.4M6.7 6.6L10 3.3l3.3 3.3"/><path d="M6.4 9.2H4.6v7.4h10.8V9.2h-1.8"/>',
+  glasses:'<rect x="2.4" y="7.2" width="6.2" height="5.4" rx="1.4"/><rect x="11.4" y="7.2" width="6.2" height="5.4" rx="1.4"/><path d="M8.6 9.2h2.8"/>',
+  stereo:'<rect x="2.6" y="5.2" width="6.9" height="9.6" rx="1.5"/><rect x="10.5" y="5.2" width="6.9" height="9.6" rx="1.5"/>',
+  film:'<rect x="2.8" y="4.6" width="14.4" height="10.8" rx="2"/><path d="M6.2 4.6v10.8M13.8 4.6v10.8"/>'
+};
+const svg = name => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" '
+  + 'stroke-linecap="round" aria-hidden="true">'+ICONS[name]+'</svg>';
+function paintIcons(root=document){
+  root.querySelectorAll('[data-icon]').forEach(el=>{
+    const want=el.dataset.icon;
+    if(el.dataset.painted===want) return;
+    el.dataset.painted=want;
+    const old=el.querySelector('svg'); if(old) old.remove();
+    el.insertAdjacentHTML('afterbegin', svg(want));
+  });
+}
+/* Swapping a label must not wipe the glyph. */
+function setBtn(id, icon, label){
+  const b=$(id);
+  b.textContent=label;
+  b.dataset.icon=icon; b.dataset.painted='';
+  paintIcons(b.parentElement||document);
+}
+const viewer=$('viewer'), drop=$('drop'), file=$('file'), status=$('status');
+const scope=$('scope'), sctx=scope.getContext('2d');
+const STORE='depthgram-v4';
+const MAXW=1400;              // longest side the depth model sees
+const MAXPIX=4.2e6;           // cap on the render target
+
+/* Amplitude and speed ride log sliders so the sub-pixel end stays reachable. */
+const AMP_MIN=0.05, AMP_MAX=320;   // px, peak shift of the nearest plane
+const HZ_MIN=0.02,  HZ_MAX=90;     // Hz
+
+const DEFAULTS={
+  path:'orbit', ampPx:16, hz:0.39, piv:0.50, layers:125, view:0, relief:2.4,
+  cues:{pointer:true, dof:false}
+};
+let P=JSON.parse(JSON.stringify(DEFAULTS));
+
+if(location.protocol==='file:') $('banner').classList.add('show');
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){ DEFAULTS.path='still'; P.path='still'; }
+
+try{
+  const s=JSON.parse(localStorage.getItem(STORE)||'null');
+  if(s) P=Object.assign({}, DEFAULTS, s, {cues:Object.assign({}, DEFAULTS.cues, s.cues||{})});
+}catch(e){}
+const save=()=>{ try{ localStorage.setItem(STORE, JSON.stringify(P)); }catch(e){} };
+
+const logToVal=(v,lo,hi)=>lo*Math.pow(hi/lo, v/1000);
+const valToLog=(x,lo,hi)=>Math.round(1000*Math.log(x/lo)/Math.log(hi/lo));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function say(m, isErr){ status.textContent=m||''; status.classList.toggle('err', !!isErr); }
+function progress(f){
+  const b=$('bar');
+  if(f==null){ b.classList.remove('show'); return; }
+  b.classList.add('show'); $('barfill').style.width=(clamp(f,0,1)*100).toFixed(1)+'%';
+}
+
+/* ---------------------------------------------------------------- display */
+let refresh=60, refreshLocked=false, dtHist=[];
+function measureRefresh(now){
+  if(refreshLocked || document.hidden) return;
+  dtHist.push(now);
+  if(dtHist.length>150) dtHist.shift();
+  if(dtHist.length<50) return;
+  const gaps=[];
+  for(let i=1;i<dtHist.length;i++) gaps.push(dtHist[i]-dtHist[i-1]);
+  gaps.sort((a,b)=>a-b);
+  const q=f=>gaps[Math.min(gaps.length-1, Math.floor(gaps.length*f))];
+  const med=q(0.5);
+  /* Refuse to conclude anything from a window with dropped frames: a
+     backgrounded or capture-throttled tab otherwise reads as 60 Hz. */
+  if(med>0.5 && (q(0.75)-q(0.25))/med < 0.2){
+    const raw=1000/med;
+    const known=[60,72,75,90,100,120,144,165,240,360];
+    refresh=known.find(k=>Math.abs(k-raw)/k<0.04) || Math.round(raw);
+    refreshLocked=true;
+    badge();
+    syncHz();
+  }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden){ refreshLocked=false; dtHist=[]; }
+});
+function badge(){
+  $('env').textContent = (refreshLocked ? refresh+' Hz display' : 'Checking display…')
+    + (gl ? ' · WebGL 2' : ' · No WebGL') + (hasGPU ? ' · WebGPU' : '');
+}
+/* Frames per cycle; the notch snaps the rate to refresh/N so a cycle closes
+   exactly on a frame boundary. */
+function lockInfo(){
+  const n=Math.max(2, Math.round(refresh/P.hz));
+  return {n, hz:refresh/n};
+}
+
+/* ---------------------------------------------------------------- webgl */
+let hasGPU=!!navigator.gpu;
+const out=document.createElement('canvas');
+const gl=out.getContext('webgl2',{antialias:false, preserveDrawingBuffer:true, alpha:false});
+
+const VS=`#version 300 es
+in vec2 aPos;
+out vec2 vUv;
+void main(){
+  vUv = vec2(aPos.x*0.5+0.5, 0.5-aPos.y*0.5);
+  gl_Position = vec4(aPos,0.0,1.0);
+}`;
+
+const FS=`#version 300 es
+precision highp float;
+precision highp sampler2D;
+in vec2 vUv;
+out vec4 frag;
+
+uniform sampler2D uColor;
+uniform sampler2D uDepth;
+uniform vec2  uShift;    // uv-space camera shift per unit of depth
+uniform float uPivot;
+uniform int   uSteps;
+uniform float uZoom;     // overscan so displaced edges never enter frame
+uniform vec2  uCover;    // aspect fit: crops the image to fill the canvas
+uniform float uGain;     // depth exaggeration about the focus plane
+uniform float uQuant;    // >1 snaps depth to that many flat planes
+uniform float uDof;
+uniform float uAspect;   // cw/ch, keeps the defocus disc round in pixels
+uniform int   uView;     // 0 parallax, 1 depth, 2 split
+uniform float uSplit;
+uniform vec2  uPx;       // 1/output resolution
+
+vec2 cl(vec2 uv){ return clamp(uv, vec2(0.0015), vec2(0.9985)); }
+
+/* Steepens the depth gradient at the focus plane without clipping either end.
+   Slope at the pivot is exactly uGain; 0 and 1 stay put, so the near field
+   keeps its separation instead of saturating to a single plane.
+   pow() with a zero base is undefined in GLSL ES and a normalised map hits
+   exactly 0 and 1, so the base is floored. */
+float relief(float d){
+  float p = uPivot;
+  if(d >= p){
+    float span = max(1.0-p, 1e-4);
+    return p + span*(1.0 - pow(max(1.0 - (d-p)/span, 1e-5), uGain));
+  }
+  float span = max(p, 1e-4);
+  return p - span*(1.0 - pow(max(1.0 - (p-d)/span, 1e-5), uGain));
+}
+
+float dAt(vec2 uv){
+  float d = relief(texture(uDepth, cl(uv)).r);
+  d = floor(min(d,0.99999)*uQuant)/(uQuant-1.0);
+  return d;
+}
+
+/* Steep parallax with bisection refinement. h runs 1 (near) to 0 (far); the
+   first crossing is the nearest surface, so occlusion comes out right. */
+vec2 march(vec2 uv0){
+  float N  = float(uSteps);
+  float dh = 1.0/N;
+  float h  = 1.0;
+  float pd = dAt(uv0 + uShift*(h-uPivot));
+  if(pd >= h) return uv0 + uShift*(h-uPivot);
+  for(int i=0;i<uSteps;i++){
+    h -= dh;
+    if(dAt(uv0 + uShift*(h-uPivot)) >= h){
+      float hit = h, miss = h + dh;
+      for(int j=0;j<6;j++){
+        float m = 0.5*(hit+miss);
+        if(dAt(uv0 + uShift*(m-uPivot)) >= m) hit = m; else miss = m;
+      }
+      return uv0 + uShift*(0.5*(hit+miss)-uPivot);
+    }
+  }
+  return uv0 + uShift*(0.0-uPivot);
+}
+
+/* A fixed tap ring bands badly once the radius grows, so this gathers on a
+   golden-angle spiral with even area coverage and a per-pixel rotation, which
+   trades banding for noise. Taps clearly in front of the centre pixel are
+   weighted down, so a blurred background cannot bleed over a sharp edge. */
+const float GA = 2.39996323;
+const int   TAPS = 28;
+
+vec3 shade(vec2 uv, float d){
+  float r = abs(d-uPivot)*uDof;
+  if(r < 0.0004) return texture(uColor, cl(uv)).rgb;
+
+  float ang = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453)*6.2831853;
+  vec3  acc = texture(uColor, cl(uv)).rgb;
+  float wsum = 1.0;
+
+  for(int i=1;i<=TAPS;i++){
+    float fi  = float(i);
+    float rad = r*sqrt(fi/float(TAPS));
+    float a   = ang + fi*GA;
+    vec2  suv = cl(uv + vec2(cos(a), sin(a)*uAspect)*rad);
+    float w   = 1.0 - 0.9*smoothstep(0.02, 0.12, dAt(suv) - d);
+    acc  += texture(uColor, suv).rgb * w;
+    wsum += w;
+  }
+  return acc/wsum;
+}
+
+void main(){
+  vec2 uv0 = (vUv-0.5)*uZoom*uCover + 0.5;
+  bool asDepth = (uView==1) || (uView==2 && vUv.x > uSplit);
+
+  vec3 col;
+  if(asDepth){
+    /* the shaped field the parallax actually marches, so the layer count and
+       the exaggeration are visible here. Save Depth Map writes the same. */
+    col = vec3(dAt(uv0));
+  }else{
+    vec2 hit = march(uv0);
+    col = shade(hit, dAt(hit));
+  }
+
+  if(uView==2){
+    float e = abs(vUv.x-uSplit);
+    float w = uPx.x*1.2;
+    col = mix(vec3(0.04,0.52,1.0), col, smoothstep(w, w*2.4, e));
+  }
+
+  /* Ordered dither: at sub-pixel amplitudes the whole signal lives inside one
+     8-bit step and would otherwise quantise away to nothing. */
+  col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453)-0.5)/255.0;
+  frag = vec4(col,1.0);
+}`;
+
+let prog=null, U={}, texColor=null, texDepth=null;
+
+function compile(){
+  const mk=(t,src)=>{ const sh=gl.createShader(t); gl.shaderSource(sh,src); gl.compileShader(sh);
+    if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
+  prog=gl.createProgram();
+  gl.attachShader(prog, mk(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog, mk(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+
+  const buf=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1, 3,-1, -1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(prog,'aPos');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+
+  for(const n of ['uColor','uDepth','uShift','uPivot','uSteps','uZoom','uCover','uGain',
+                  'uQuant','uDof','uAspect','uView','uSplit','uPx'])
+    U[n]=gl.getUniformLocation(prog,n);
+  gl.uniform1i(U.uColor,0);
+  gl.uniform1i(U.uDepth,1);
+}
+
+function upload(unit, canvas, existing){
+  const t = existing || gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0+unit);
+  gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE,canvas);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  return t;
+}
+
+/* ---------------------------------------------------------------- state */
+let estimator=null, srcCanvas=null, depthCanvas=null, cw=0, ch=0, ready=false;
+let stats=null;                 // {lo, hi, grad} measured from each depth map
+let profile=null;               // centre-weighted depth histogram, 256 bins
+let playing=true, frameNo=0, phaseFrame=0, tAccum=0, lastNow=0, fps=60;
+let cam={x:0,y:0}, ptr={x:0,y:0,inside:false}, splitPos=0.5;
+let trail=[];
+
+/* The render target follows the element, so full screen really is full
+   screen; the image is cropped to cover rather than letterboxed. */
+function resize(){
+  if(!gl) return;
+  const r=viewer.getBoundingClientRect();
+  if(!r.width || !r.height) return;
+  const dpr=Math.min(devicePixelRatio||1, 2);
+  let W=Math.max(1,Math.round(r.width*dpr)), H=Math.max(1,Math.round(r.height*dpr));
+  const k=Math.sqrt(MAXPIX/(W*H));
+  if(k<1){ W=Math.round(W*k); H=Math.round(H*k); }
+  if(out.width!==W || out.height!==H){ out.width=W; out.height=H; gl.viewport(0,0,W,H); }
+}
+new ResizeObserver(resize).observe(viewer);
+document.addEventListener('fullscreenchange',()=>{
+  const on=!!document.fullscreenElement;
+  setBtn('full', on?'collapse':'expand', on?'Exit Full Screen':'Full Screen');
+  if(on) bumpHud(); else $('hud').classList.remove('on');
+  resize();
+});
+
+let hudTimer=0;
+function bumpHud(){
+  if(!document.fullscreenElement) return;
+  $('hud').classList.add('on');
+  clearTimeout(hudTimer);
+  hudTimer=setTimeout(()=>$('hud').classList.remove('on'), 2600);
+}
+
+/* ---------------------------------------------------------------- controls */
+const fill=el=>{
+  const pct=(el.value-el.min)/(el.max-el.min)*100;
+  el.style.setProperty('--p', pct.toFixed(2)+'%');
+};
+const setSeg=(id,index)=>{
+  const box=$(id);
+  box.style.setProperty('--i', index);
+  [...box.querySelectorAll('button')].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===index)));
+};
+
+function syncAmp(){
+  const px=P.ampPx, subpx=px<1;
+  $('amp').value=valToLog(clamp(px,AMP_MIN,AMP_MAX),AMP_MIN,AMP_MAX); fill($('amp'));
+  $('ampv').textContent = subpx ? px.toFixed(3)+' px' : px.toFixed(px<10?1:0)+' px';
+  $('ampv').className='num '+(subpx?'info':px>220?'warn':'good');
+  $('ampsub').textContent = subpx
+    ? 'Sub-pixel. Carried by bilinear taps, not integer offsets.'
+    : stats
+      ? 'Auto suggests '+autoAmplitude().toFixed(0)+' px for this photo. Its hardest depth edges run '
+        +(stats.grad*255).toFixed(0)+'/255 per pixel.'
+      : 'Peak shift of the nearest plane.';
+}
+function syncHz(){
+  $('hz').value=valToLog(clamp(P.hz,HZ_MIN,HZ_MAX),HZ_MIN,HZ_MAX); fill($('hz'));
+  const L=lockInfo();
+  $('hzv').textContent=L.hz.toFixed(2)+' Hz';
+  $('hzv').className='num '+(L.n<4?'warn':'good');
+  $('hzsub').textContent = L.n<4
+    ? 'Only '+L.n+' frames per sweep at '+refresh+' Hz, so it will strobe. Slow it down.'
+    : 'One sweep every '+L.n+' frames, so it never beats against the '+refresh+' Hz display.';
+}
+function syncAll(){
+  syncAmp(); syncHz();
+  $('piv').value=P.piv; fill($('piv')); $('pivv').textContent=P.piv.toFixed(2);
+  $('pivsub').textContent = profile
+    ? 'Auto suggests '+autoFocus().toFixed(2)+', pinned on the near subject, so the background drifts behind it.'
+    : 'The plane that stays pinned.';
+  $('rel').value=P.relief; fill($('rel')); $('relv').textContent=P.relief.toFixed(2)+'×';
+  $('lay').value=P.layers; fill($('lay')); $('layv').textContent=P.layers;
+  $('laysub').textContent = 'Depth is cut into '+P.layers+' planes. '
+    + (P.layers>=96 ? 'Continuous to the eye.'
+      : P.layers>=24 ? 'Faint terracing on smooth gradients.'
+      : 'A cut-out diorama.');
+  setSeg('seg', ['orbit','lateral','still'].indexOf(P.path));
+  setSeg('view', P.view);
+  $('cue-pointer').checked=P.cues.pointer;
+  $('cue-dof').checked=P.cues.dof;
+  setBtn('play', playing?'pause':'play', playing?'Pause':'Play');
+  setBtn('hud-play', playing?'pause':'play', playing?'Pause':'Play');
+  $('hud-ptr').setAttribute('aria-pressed', String(P.cues.pointer));
+}
+
+$('amp').addEventListener('input',e=>{ P.ampPx=logToVal(+e.target.value,AMP_MIN,AMP_MAX); fill(e.target); syncAmp(); save(); });
+$('hz').addEventListener('input',e=>{ P.hz=logToVal(+e.target.value,HZ_MIN,HZ_MAX); fill(e.target); syncHz(); save(); });
+$('piv').addEventListener('input',e=>{ P.piv=+e.target.value; fill(e.target); $('pivv').textContent=P.piv.toFixed(2); save(); });
+$('autopiv').addEventListener('click',()=>{
+  if(!profile){ say('Open a photo first.'); return; }
+  P.piv=autoFocus(); syncAll(); save();
+  say('Focus depth set to '+P.piv.toFixed(2)+' from the depth profile.');
+});
+$('rel').addEventListener('input',e=>{ P.relief=+e.target.value; fill(e.target); $('relv').textContent=P.relief.toFixed(2)+'×'; save(); });
+$('lay').addEventListener('input',e=>{ P.layers=+e.target.value; fill(e.target); syncAll(); save(); });
+
+$('seg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  P.path=b.dataset.p; syncAll(); save();
+});
+$('view').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  P.view=+b.dataset.v; syncAll(); save();
+});
+$('cue-pointer').addEventListener('change',e=>{ P.cues.pointer=e.target.checked; syncAll(); save(); });
+$('hud-ptr').addEventListener('click',()=>{ P.cues.pointer=!P.cues.pointer; syncAll(); save(); bumpHud(); });
+$('hud-play').addEventListener('click',()=>{ playing=!playing; syncAll(); bumpHud(); });
+$('hud-exit').addEventListener('click',()=>document.exitFullscreen());
+$('cue-dof').addEventListener('change',e=>{ P.cues.dof=e.target.checked; save(); });
+
+/* Sub-pixel swing notched to a whole number of frames. */
+$('micro').addEventListener('click',()=>{
+  P.hz=24; P.ampPx=0.6; P.path='orbit'; P.relief=2.4; P.cues.pointer=false;
+  syncAll(); save();
+  say('Micro sway: '+lockInfo().n+' frames per sweep, '+P.ampPx.toFixed(2)+' px of travel.');
+});
+
+$('autoamp').addEventListener('click',()=>{
+  if(!stats){ say('Open a photo first.'); return; }
+  P.ampPx=autoAmplitude(); syncAmp(); save();
+  say('Motion range set to '+P.ampPx.toFixed(0)+' px from the depth map.');
+});
+
+$('reset').addEventListener('click',()=>{
+  const amp = stats   ? autoAmplitude() : DEFAULTS.ampPx;
+  const piv = profile ? autoFocus()     : DEFAULTS.piv;
+  P=JSON.parse(JSON.stringify(DEFAULTS));
+  P.ampPx=amp; P.piv=piv;   // both are measured from the photo, not preferences
+  syncAll(); save(); say('Settings reset to defaults.');
+});
+$('play').addEventListener('click',()=>{ playing=!playing; syncAll(); });
+$('full').addEventListener('click',()=>{
+  if(document.fullscreenElement) document.exitFullscreen();
+  else viewer.requestFullscreen?.();
+});
+$('open').addEventListener('click',()=>file.click());
+$('demo').addEventListener('click',loadDemo);
+drop.addEventListener('click',()=>file.click());
+drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click();} });
+file.addEventListener('change',()=>{ if(file.files[0]) load(file.files[0]); });
+
+['dragenter','dragover'].forEach(t=>viewer.addEventListener(t,e=>{
+  e.preventDefault(); drop.classList.add('over'); viewer.classList.add('over');
+}));
+['dragleave','drop'].forEach(t=>viewer.addEventListener(t,e=>{
+  e.preventDefault(); drop.classList.remove('over'); viewer.classList.remove('over');
+}));
+viewer.addEventListener('drop',e=>{
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')) load(f);
+  else say('That file isn’t an image. Try a JPEG or PNG.',true);
+});
+window.addEventListener('paste',e=>{
+  const it=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));
+  if(it) load(it.getAsFile());
+});
+
+viewer.addEventListener('pointermove',e=>{
+  const r=out.getBoundingClientRect();
+  if(!r.width) return;
+  const nx=clamp((e.clientX-r.left)/r.width,0,1), ny=clamp((e.clientY-r.top)/r.height,0,1);
+  ptr.x=nx*2-1; ptr.y=ny*2-1; ptr.inside=true;
+  if(P.view===2) splitPos=nx;
+  bumpHud();
+});
+viewer.addEventListener('pointerleave',()=>{ ptr.inside=false; });
+/* On touch there is no hover, so lifting the finger is what "taking the
+   pointer off the photo" means; otherwise the camera would stay frozen
+   wherever the last tap landed. */
+['pointerup','pointercancel'].forEach(t=>viewer.addEventListener(t,e=>{
+  if(e.pointerType!=='mouse') ptr.inside=false;
+}));
+
+/* The coach demonstrates the two camera states rather than describing them,
+   and retires for good on the first real pointer move inside the frame. */
+const COACHED='depthgram-coached';
+let coachTimer=0, dismissArmed=false, dismissFrom=null;
+
+function showCoach(){
+  if(!P.cues.pointer) return;
+  try{ if(localStorage.getItem(COACHED)) return; }catch(e){}
+  $('coach').classList.add('on');
+  clearTimeout(coachTimer);
+  coachTimer=setTimeout(()=>hideCoach(false), 26000);   // two full passes
+  armDismiss();
+}
+function hideCoach(remember){
+  $('coach').classList.remove('on');
+  clearTimeout(coachTimer);
+  if(remember){ try{ localStorage.setItem(COACHED,'1'); }catch(e){} }
+}
+/* The browser fires pointermove when the canvas appears under a cursor that
+   never moved, so a bare listener retires the coach before anyone reads it.
+   Only real travel counts, and only once the coach is actually up. */
+function armDismiss(){
+  if(dismissArmed) return;
+  dismissArmed=true;
+  viewer.addEventListener('pointermove',e=>{
+    if(!dismissFrom){ dismissFrom=[e.clientX,e.clientY]; return; }
+    if(Math.hypot(e.clientX-dismissFrom[0], e.clientY-dismissFrom[1]) > 28) hideCoach(true);
+  });
+}
+
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  const k=e.key.toLowerCase();
+  if(k===' '){ e.preventDefault(); playing=!playing; syncAll(); }
+  else if(k==='d'){ P.view=(P.view+1)%3; syncAll(); save(); }
+  else if(k==='f'){ document.fullscreenElement?document.exitFullscreen():viewer.requestFullscreen?.(); }
+  else if(k==='p'){ P.cues.pointer=!P.cues.pointer; syncAll(); save(); bumpHud(); }
+  else if(k==='r'){ $('reset').click(); }
+  else if(k==='escape'){ closeMenu(); }
+});
+
+/* ---------------------------------------------------------------- export */
+const expBtn=$('export'), expMenu=$('exportmenu');
+function closeMenu(){ expMenu.hidden=true; expBtn.setAttribute('aria-expanded','false'); }
+expBtn.addEventListener('click',()=>{
+  const show=expMenu.hidden;
+  expMenu.hidden=!show; expBtn.setAttribute('aria-expanded',String(show));
+});
+document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.exp')) closeMenu(); });
+
+function saveURL(url,name){
+  const a=document.createElement('a'); a.download=name; a.href=url; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 10000);
+}
+function saveCanvas(c,name){
+  c.toBlob(b=>{ if(b) saveURL(URL.createObjectURL(b), name); },'image/png');
+}
+
+/* Renders one eye by borrowing the live pipeline: cam is forced to ±1 on the
+   lateral axis, one frame is drawn, and the WebGL canvas is copied out while
+   preserveDrawingBuffer keeps it readable. cam.x=+1 samples the scene as seen
+   from the right (near planes slide left on screen), so -1 is the left eye. */
+function renderEye(x){
+  const kx=cam.x, ky=cam.y, kv=P.view;
+  P.view=0; cam.x=x; cam.y=0;
+  render();
+  const c=document.createElement('canvas'); c.width=out.width; c.height=out.height;
+  c.getContext('2d').drawImage(out,0,0);
+  cam.x=kx; cam.y=ky; P.view=kv;
+  render();
+  return c;
+}
+
+/* Half-colour anaglyph: the red channel carries the left eye's luminance
+   rather than its raw red, which kills most retinal rivalry on saturated
+   colours while the right eye keeps the full green/blue palette. */
+function anaglyph(){
+  const L=renderEye(-1), R=renderEye(1), w=L.width, h=L.height;
+  const dl=L.getContext('2d').getImageData(0,0,w,h);
+  const dr=R.getContext('2d').getImageData(0,0,w,h);
+  const a=dl.data, b=dr.data;
+  for(let i=0;i<a.length;i+=4){
+    a[i]  =0.299*a[i]+0.587*a[i+1]+0.114*a[i+2];
+    a[i+1]=b[i+1];
+    a[i+2]=b[i+2];
+  }
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  c.getContext('2d').putImageData(dl,0,0);
+  return c;
+}
+
+/* Parallel side-by-side: left eye on the left, the layout VR viewers and
+   cross-conversion tools expect. */
+function stereoPair(){
+  const L=renderEye(-1), R=renderEye(1);
+  const c=document.createElement('canvas'); c.width=L.width*2; c.height=L.height;
+  const g=c.getContext('2d');
+  g.drawImage(L,0,0); g.drawImage(R,L.width,0);
+  return c;
+}
+
+/* Seamless loop: recording starts on a cycle boundary and runs a whole number
+   of sweeps, so the last frame hands off to the first. MP4 is preferred where
+   the browser can mux it, since social apps reject WebM more often than not. */
+const CLIP_MIME=['video/mp4;codecs=avc1.640028','video/mp4','video/webm;codecs=vp9','video/webm']
+  .find(m=>window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+const CLIP_EXT = CLIP_MIME && CLIP_MIME.startsWith('video/mp4') ? 'mp4' : 'webm';
+$('clipfmt').textContent = CLIP_MIME ? CLIP_EXT.toUpperCase() : 'video';
+let recording=false;
+
+async function recordClip(){
+  if(!CLIP_MIME){ say('Video capture is not supported in this browser.',true); return; }
+  if(recording) return;
+  recording=true;
+  const keep={playing, ptr:P.cues.pointer, view:P.view, path:P.path};
+  playing=true; P.cues.pointer=false; P.view=0; ptr.inside=false;
+  if(P.path==='still') P.path='orbit';
+  syncAll();
+  try{
+    const T=1/lockInfo().hz;
+    const secs=Math.ceil(3/T)*T;         // ≥3 s, whole cycles only
+    phaseFrame=0;
+    const rec=new MediaRecorder(out.captureStream(refresh),
+      {mimeType:CLIP_MIME, videoBitsPerSecond:14e6});
+    const chunks=[];
+    rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+    const stopped=new Promise(r=>rec.onstop=r);
+    rec.start();
+    say('Recording a seamless loop ('+secs.toFixed(1)+' s)…');
+    await new Promise(r=>setTimeout(r, secs*1000));
+    rec.stop(); await stopped;
+    saveURL(URL.createObjectURL(new Blob(chunks,{type:CLIP_MIME.split(';')[0]})),
+      'depthgram-loop.'+CLIP_EXT);
+    say('Loop saved. It repeats without a seam.');
+  }catch(err){
+    console.error(err);
+    say('Recording failed: '+(err?.message||err), true);
+  }finally{
+    playing=keep.playing; P.cues.pointer=keep.ptr; P.view=keep.view; P.path=keep.path;
+    syncAll();
+    recording=false;
+  }
+}
+
+expMenu.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||!ready) return;
+  closeMenu();
+  const x=b.dataset.x;
+  if(x==='frame'){ render(); saveCanvas(out,'depthgram-3d.png'); }
+  else if(x==='depth')    saveCanvas(shapedDepth(),'depthgram-depth-map.png');
+  else if(x==='anaglyph') saveCanvas(anaglyph(),'depthgram-anaglyph.png');
+  else if(x==='stereo')   saveCanvas(stereoPair(),'depthgram-stereo-pair.png');
+  else if(x==='clip')     recordClip();
+});
+
+$('share').addEventListener('click',async()=>{
+  const data={
+    title:'Depthgram',
+    text:'Turn any photo into an animated 3D scene. Free, private, in your browser.',
+    url:location.origin+location.pathname
+  };
+  try{
+    if(navigator.share){ await navigator.share(data); return; }
+    await navigator.clipboard.writeText(data.url);
+    say('Link copied to clipboard.');
+  }catch(e){ /* user dismissed the sheet */ }
+});
+
+/* The exported map is the shaped field, matching the Depth Map view rather
+   than the raw model output. */
+function shapedDepth(){
+  const c=document.createElement('canvas'); c.width=cw; c.height=ch;
+  const g=c.getContext('2d');
+  const src=depthCanvas.getContext('2d').getImageData(0,0,cw,ch).data;
+  const N=clamp(P.layers|0,2,192), im=g.createImageData(cw,ch);
+  for(let i=0,n=cw*ch;i<n;i++){
+    const d=Math.floor(Math.min(reliefJS(src[i*4]/255),0.99999)*N)/(N-1);
+    const v=Math.round(clamp(d,0,1)*255);
+    im.data[i*4]=v; im.data[i*4+1]=v; im.data[i*4+2]=v; im.data[i*4+3]=255;
+  }
+  g.putImageData(im,0,0);
+  return c;
+}
+
+/* ---------------------------------------------------------------- sources */
+/* Scenes with real foreground-to-background separation, which is what shows
+   the parallax off: forests, foliage, layered landscapes. Fetched as blobs so
+   the canvas stays untainted and the depth map is still exportable.
+   All landscape: a portrait frame pushes the controls off the first screen. */
+const DEMOS=[
+  'photo-1441974231531-c6227db76b6e',  // 1400x932
+  'photo-1502082553048-f009c37129b9',  // 1400x933
+  'photo-1416879595882-3373a0480b5b',  // 1400x933
+  'photo-1470071459604-3b5ec3a7fe05',  // 1400x834
+  'photo-1511497584788-876760111969',  // 1400x788
+  'photo-1447752875215-b2761acb3c5d',  // 1400x933
+  'photo-1476231682828-37e571bc172f',  // 1400x1050
+  'photo-1519681393784-d120267933ba',  // 1400x934
+  'photo-1506905925346-21bda4d32df4',  // 1400x933
+  'photo-1497436072909-60f360e1d4b1',  // 1400x788
+  'photo-1465146344425-f00d5f5c8f07',  // 1400x927
+  'photo-1490750967868-88aa4486c946',  // 1400x934
+  'photo-1524758631624-e2822e304c36'   // 1400x933
+];
+let lastDemo=-1;
+function demoURL(){
+  let i=lastDemo;
+  while(i===lastDemo) i=Math.floor(Math.random()*DEMOS.length);
+  lastDemo=i;
+  return 'https://images.unsplash.com/'+DEMOS[i]+'?w=1400&q=80&fm=jpg';
+}
+async function loadDemo(){
+  try{
+    say('Fetching a photo…'); progress(0.01);
+    const r=await fetch(demoURL(),{mode:'cors'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    await load(await r.blob(),'demo');
+  }catch(err){
+    console.warn('photo unavailable',err);
+    say('Could not reach Unsplash, falling back to the built-in scene.');
+    loadSample();
+  }
+}
+
+/* Offline fallback: a synthetic landscape the depth model handles fine. */
+function loadSample(){
+  const w=1200,h=760,c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d');
+  const sky=g.createLinearGradient(0,0,0,h*0.72);
+  sky.addColorStop(0,'#1b2b4d'); sky.addColorStop(0.55,'#7c6a8a'); sky.addColorStop(1,'#e8a56b');
+  g.fillStyle=sky; g.fillRect(0,0,w,h);
+  g.fillStyle='#ffd9a0'; g.beginPath(); g.arc(w*0.66,h*0.52,46,0,7); g.fill();
+  const ridge=(base,amp,seed,fillC)=>{
+    g.fillStyle=fillC; g.beginPath(); g.moveTo(0,h);
+    for(let x=0;x<=w;x+=6){
+      const y=base - amp*(0.6*Math.sin(x*0.0037+seed) + 0.4*Math.sin(x*0.0113+seed*2.1));
+      g.lineTo(x,y);
+    }
+    g.lineTo(w,h); g.closePath(); g.fill();
+  };
+  ridge(h*0.60,52,0.4,'#5d5f7e'); ridge(h*0.68,64,1.9,'#454A66');
+  ridge(h*0.78,72,3.3,'#2f3550'); ridge(h*0.90,58,5.1,'#1b2036');
+  g.fillStyle='#0e1120'; g.fillRect(0,h*0.93,w,h*0.07);
+  const tree=(x,s)=>{
+    g.fillStyle='#0a0d18';
+    g.fillRect(x-3*s,h*0.94-46*s,6*s,46*s);
+    g.beginPath(); g.moveTo(x,h*0.94-104*s);
+    g.lineTo(x+26*s,h*0.94-28*s); g.lineTo(x-26*s,h*0.94-28*s); g.closePath(); g.fill();
+  };
+  tree(w*0.13,1.5); tree(w*0.22,1.0); tree(w*0.87,1.75);
+  load(c,'sample');
+}
+
+/* ---------------------------------------------------------------- pipeline */
+/* Every open re-runs the whole chain: resize, depth estimate, normalise,
+   re-measure the statistics, re-derive the focus plane and motion range,
+   re-upload both textures and reset the scope. Only the dials you set by
+   hand (speed, exaggeration, layers, path, view) carry over. */
+async function load(f, tag){
+  try{
+    ready=false; say('Reading the image…'); progress(0.02);
+    const bmp=await createImageBitmap(f);
+    const s=Math.min(1, MAXW/Math.max(bmp.width,bmp.height));
+    cw=Math.round(bmp.width*s); ch=Math.round(bmp.height*s);
+
+    srcCanvas=document.createElement('canvas'); srcCanvas.width=cw; srcCanvas.height=ch;
+    srcCanvas.getContext('2d').drawImage(bmp,0,0,cw,ch);
+    bmp.close?.();
+
+    if(!estimator){
+      say('Loading Depth Anything V2. The first run downloads about 50 MB…');
+      const opts={ progress_callback: p=>{ if(p.status==='progress'&&p.total) progress(p.loaded/p.total); } };
+      try{
+        estimator = hasGPU
+          ? await pipeline('depth-estimation','onnx-community/depth-anything-v2-small',
+              Object.assign({device:'webgpu', dtype:'fp16'}, opts))
+          : await pipeline('depth-estimation','onnx-community/depth-anything-v2-small', opts);
+      }catch(e){
+        console.warn('WebGPU path failed, falling back',e);
+        hasGPU=false; badge();
+        estimator = await pipeline('depth-estimation','onnx-community/depth-anything-v2-small', opts);
+      }
+    }
+
+    say('Estimating depth…'); progress(0.9);
+    const blob = await new Promise(r=>srcCanvas.toBlob(r,'image/png'));
+    const url  = URL.createObjectURL(blob);
+    let res;
+    try{ res = await estimator(await RawImage.fromURL(url)); }
+    finally{ URL.revokeObjectURL(url); }
+
+    buildDepth(res.depth);
+
+    if(!gl) throw new Error('WebGL 2 is unavailable in this browser');
+    if(!prog) compile();
+
+    viewer.style.setProperty('--ar', cw+' / '+ch);
+    drop.classList.add('gone');
+    if(out.parentElement!==viewer) viewer.insertBefore(out, $('coach'));
+    resize();
+    texColor=upload(0,srcCanvas,texColor);
+    texDepth=upload(1,depthCanvas,texDepth);
+
+    trail=[]; splitPos=0.5;
+    showCoach();
+    $('export').disabled=false;
+    $('credit').hidden = tag!=='demo';
+    ready=true; progress(null);
+    say((tag==='sample'?'Built-in scene':tag==='demo'?'Unsplash photo':'Photo')
+      +' · '+cw+' × '+ch+' · focus and motion range measured from the depth map.');
+  }catch(err){
+    console.error(err); progress(null);
+    say('Could not open that: '+(err?.message||err)
+      +(location.protocol==='file:'?'. Serve this over http, not file://':''), true);
+  }
+}
+
+/* Normalise to the full 0–255 range, then measure everything the renderer
+   derives per photo. */
+function buildDepth(d){
+  const n=d.width*d.height, ch_=d.channels||1, src=d.data;
+  let mn=Infinity, mx=-Infinity;
+  for(let i=0;i<n;i++){ const v=src[i*ch_]; if(v<mn)mn=v; if(v>mx)mx=v; }
+  const span=(mx-mn)||1;
+
+  const tmp=document.createElement('canvas'); tmp.width=d.width; tmp.height=d.height;
+  const tg=tmp.getContext('2d'), img=tg.createImageData(d.width,d.height);
+
+  /* Centre-weighted depth profile. A plain median parks the focus plane on the
+     sky in any wide scene, because most pixels are background; the subject is
+     almost always near the middle of the frame, so weight for that. */
+  const hist=new Float64Array(256);
+  let wsum=0;
+  for(let y=0;y<d.height;y++){
+    const ny=(y/(d.height-1))*2-1;
+    for(let x=0;x<d.width;x++){
+      const i=y*d.width+x, nx=(x/(d.width-1))*2-1;
+      const v=((src[i*ch_]-mn)/span*255)|0;
+      const w=Math.exp(-(nx*nx+ny*ny)/(2*0.45*0.45));
+      hist[v]+=w; wsum+=w;
+      img.data[i*4]=v; img.data[i*4+1]=v; img.data[i*4+2]=v; img.data[i*4+3]=255;
+    }
+  }
+  tg.putImageData(img,0,0);
+  profile=hist;
+
+  depthCanvas=document.createElement('canvas'); depthCanvas.width=cw; depthCanvas.height=ch;
+  const dc=depthCanvas.getContext('2d');
+  dc.imageSmoothingEnabled=true; dc.imageSmoothingQuality='high';
+  dc.drawImage(tmp,0,0,cw,ch);
+
+  measureDepth(dc.getImageData(0,0,cw,ch).data);
+  P.piv=autoFocus();
+  P.ampPx=autoAmplitude();
+  syncAll(); save();
+}
+
+/* The usable motion range is set by the steepest depth edges, not by taste. A
+   pixel and its neighbour separated by a depth gradient g are pulled apart by
+   A*g px; once that exceeds the width of the transition the edge visibly
+   tears. Take a high percentile of the gradient and solve for the amplitude
+   that keeps the worst tear at STRETCH px. Flat scenes have tiny gradients and
+   correctly ask for a large range; their displacement is small anyway,
+   because it scales with (depth − focus plane). */
+const STRETCH = 2.0;
+
+function measureDepth(dd){
+  const dhist=new Uint32Array(256), ghist=new Uint32Array(256);
+  const n=cw*ch;
+  for(let i=0;i<n;i++) dhist[dd[i*4]]++;
+
+  let gn=0;
+  for(let y=1;y<ch-1;y++){
+    for(let x=1;x<cw-1;x++){
+      const i=(y*cw+x)*4;
+      const gx=(dd[i+4]-dd[i-4])*0.5;
+      const gy=(dd[i+cw*4]-dd[i-cw*4])*0.5;
+      ghist[Math.min(255, Math.round(Math.sqrt(gx*gx+gy*gy)))]++; gn++;
+    }
+  }
+  const pct=(h,total,q)=>{ let a=0; for(let v=0;v<256;v++){ a+=h[v]; if(a>=total*q) return v; } return 255; };
+  stats={
+    lo:  pct(dhist,n,0.005)/255,
+    hi:  pct(dhist,n,0.995)/255,
+    grad:pct(ghist,gn,0.999)/255
+  };
+}
+
+function autoAmplitude(){
+  if(!stats) return DEFAULTS.ampPx;
+  return clamp(STRETCH/Math.max(stats.grad,1e-4), 6, AMP_MAX);
+}
+
+/* Pin the subject, which is near, not the bulk of the scene, which is far.
+   Every area-weighted statistic (median, mode, mean) lands on the background,
+   because that is what most photographs are mostly made of: sky, distance,
+   defocused wash. Pinning there is exactly backwards: it holds the emptiness
+   still and swings the subject around it.
+   So take a high percentile of the depth distribution instead. FOCUS_Q sits
+   short of the extreme so a single near twig or a lens smudge cannot claim the
+   plane, but well past the background mass. The subject holds still and the
+   background parallaxes behind it, which is the read that looks like depth. */
+const FOCUS_Q = 0.88;
+
+function autoFocus(){
+  if(!profile) return DEFAULTS.piv;
+  let total=0;
+  for(let v=0;v<256;v++) total+=profile[v];
+  if(!total) return DEFAULTS.piv;
+  let acc=0;
+  for(let v=0;v<256;v++){
+    acc+=profile[v];
+    if(acc >= total*FOCUS_Q) return clamp(v/255, 0.25, 0.92);
+  }
+  return DEFAULTS.piv;
+}
+
+/* ---------------------------------------------------------------- render */
+/* Mirror of the shader's relief(), so the overscan and the readouts agree with
+   what is actually drawn. */
+function reliefJS(d){
+  const p=P.piv, g=P.relief;
+  if(d>=p){ const span=Math.max(1-p,1e-4); return p+span*(1-Math.pow(Math.max(1-(d-p)/span,1e-5),g)); }
+  const span=Math.max(p,1e-4);  return p-span*(1-Math.pow(Math.max(1-(p-d)/span,1e-5),g));
+}
+/* How far the extreme planes actually sit from the focus plane. The
+   theoretical max(piv, 1-piv) over-crops any photo whose depth does not span
+   the full range. */
+function reachNow(){
+  if(!stats) return Math.max(P.piv,1-P.piv);
+  return Math.max(reliefJS(stats.hi)-P.piv, P.piv-reliefJS(stats.lo), 0.02);
+}
+
+function pathVec(){
+  if(P.path==='still') return [0,0];
+  /* Phase comes from the frame counter, not the clock: a sweep closes exactly
+     on a frame boundary, so it never beats against the refresh rate. */
+  const L=lockInfo();
+  const ph = 2*Math.PI*(phaseFrame % L.n)/L.n;
+  return [Math.sin(ph), P.path==='orbit' ? Math.cos(ph)*0.55 : 0];
+}
+
+function render(){
+  if(!ready || !out.width) return;
+  const ampU=P.ampPx/cw, ampV=P.ampPx/ch;
+  const reach=reachNow();
+  const zoom=clamp(1 - 2*Math.max(ampU,ampV)*reach - 0.004, 0.55, 1.0);
+
+  /* Aspect fit: sample a narrower slice of whichever axis has to be cropped
+     so the image covers the canvas instead of letterboxing inside it. */
+  const canvasAR=out.width/out.height, imgAR=cw/ch;
+  const cover = canvasAR > imgAR ? [1, imgAR/canvasAR] : [canvasAR/imgAR, 1];
+
+  gl.useProgram(prog);
+  gl.uniform2f(U.uShift, cam.x*ampU, cam.y*ampV);
+  gl.uniform1f(U.uPivot, P.piv);
+  gl.uniform1i(U.uSteps, clamp(P.layers|0,2,192));
+  gl.uniform1f(U.uZoom, zoom);
+  gl.uniform2f(U.uCover, cover[0], cover[1]);
+  gl.uniform1f(U.uGain, P.relief);
+  gl.uniform1f(U.uQuant, clamp(P.layers|0,2,192));
+  gl.uniform1f(U.uDof,  P.cues.dof?0.016:0.0);
+  gl.uniform1f(U.uAspect, cw/ch);
+  gl.uniform1i(U.uView, P.view);
+  gl.uniform1f(U.uSplit, splitPos);
+  gl.uniform2f(U.uPx, 1/out.width, 1/out.height);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+function loop(now){
+  requestAnimationFrame(loop);
+  measureRefresh(now);
+  const dt = lastNow ? Math.min((now-lastNow)/1000, 0.1) : 1/60;
+  lastNow=now; frameNo++;
+  fps += ((1/Math.max(dt,1e-4)) - fps)*0.08;
+  if(playing){ tAccum += dt; phaseFrame++; }
+
+  const usePtr = P.cues.pointer && ptr.inside && P.view!==2;
+  let tx, ty;
+  if(usePtr){ tx=ptr.x; ty=ptr.y; }
+  else { const v=pathVec(); tx=v[0]; ty=v[1]; }
+
+  /* Frame-locked motion must not be smoothed, or the notch smears. */
+  const k = usePtr ? 1-Math.exp(-dt*9) : 1;
+  cam.x += (tx-cam.x)*k;
+  cam.y += (ty-cam.y)*k;
+
+  render();
+  drawScope();
+}
+
+/* ---------------------------------------------------------------- scope */
+function drawScope(){
+  const W=scope.width, H=scope.height;
+  trail.push([cam.x,cam.y]); if(trail.length>240) trail.shift();
+
+  const css=getComputedStyle(document.documentElement);
+  const dim=css.getPropertyValue('--faint').trim()||'rgba(255,255,255,.36)';
+  const acc=css.getPropertyValue('--accent').trim()||'#0A84FF';
+
+  sctx.clearRect(0,0,W,H);
+  const pad=14, box=H-pad*2, cx=pad+box/2, cy=H/2, rad=box/2;
+
+  sctx.strokeStyle=dim; sctx.globalAlpha=.45; sctx.lineWidth=1.5;
+  sctx.beginPath();
+  sctx.moveTo(cx-rad,cy); sctx.lineTo(cx+rad,cy);
+  sctx.moveTo(cx,cy-rad); sctx.lineTo(cx,cy+rad);
+  sctx.stroke();
+  sctx.globalAlpha=.25;
+  sctx.beginPath(); sctx.roundRect(cx-rad,cy-rad,rad*2,rad*2,10); sctx.stroke();
+  sctx.globalAlpha=1;
+
+  sctx.lineWidth=2.5; sctx.lineCap='round';
+  for(let i=1;i<trail.length;i++){
+    sctx.strokeStyle=acc; sctx.globalAlpha=i/trail.length*0.85;
+    sctx.beginPath();
+    sctx.moveTo(cx+trail[i-1][0]*rad, cy+trail[i-1][1]*rad);
+    sctx.lineTo(cx+trail[i][0]*rad,   cy+trail[i][1]*rad);
+    sctx.stroke();
+  }
+  sctx.globalAlpha=1;
+  sctx.fillStyle='#fff';
+  sctx.beginPath(); sctx.arc(cx+cam.x*rad, cy+cam.y*rad, 4.5, 0, 7); sctx.fill();
+
+  /* Right pane: displacement of the nearest plane in pixels, against 1 px. */
+  const gx=pad+box+20, gw=W-gx-pad;
+  const peakPx=P.ampPx*reachNow();
+  const sc=rad/Math.max(peakPx,1.2);
+
+  sctx.strokeStyle=dim; sctx.globalAlpha=.45; sctx.lineWidth=1.5;
+  sctx.beginPath(); sctx.moveTo(gx,cy); sctx.lineTo(gx+gw,cy); sctx.stroke();
+  sctx.globalAlpha=.3; sctx.setLineDash([4,5]);
+  sctx.beginPath();
+  sctx.moveTo(gx,cy-sc); sctx.lineTo(gx+gw,cy-sc);
+  sctx.moveTo(gx,cy+sc); sctx.lineTo(gx+gw,cy+sc);
+  sctx.stroke(); sctx.setLineDash([]); sctx.globalAlpha=1;
+
+  sctx.strokeStyle=acc; sctx.lineWidth=2.5;
+  sctx.beginPath();
+  for(let i=0;i<trail.length;i++){
+    const px=gx+gw-(trail.length-i)*(gw/240);
+    const py=cy-clamp(trail[i][0]*peakPx*sc, -rad, rad);
+    i?sctx.lineTo(px,py):sctx.moveTo(px,py);
+  }
+  sctx.stroke();
+
+  $('k1').textContent = ready
+    ? '±'+(peakPx<1?peakPx.toFixed(3):peakPx.toFixed(1))+' px'+(peakPx<1?' · sub-pixel':'')
+    : 'Idle';
+  $('k2').textContent = Math.round(fps)+' fps'
+    + ' · '+lockInfo().n+' f/sweep'
+    + (playing?'':' · paused');
+}
+
+/* ---------------------------------------------------------------- boot */
+function sizeScope(){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const W=Math.round((scope.clientWidth||304)*dpr), H=Math.round(108*dpr);
+  if(scope.width!==W||scope.height!==H){ scope.width=W; scope.height=H; }
+}
+new ResizeObserver(sizeScope).observe(scope);
+sizeScope();
+
+/* Touch has no hover and no keyboard; say what the gesture actually is. */
+const COARSE=matchMedia('(pointer: coarse)').matches;
+if(COARSE){
+  document.querySelector('.coach .cap .a').textContent='Drag across the photo to look around';
+  document.querySelector('.coach .cap .b').textContent='Lift your finger and the camera drifts on its own';
+  drop.querySelector('strong').textContent='Tap to Choose a Photo';
+  drop.querySelector('span:last-of-type').textContent='Or drop one here';
+}
+/* iOS Safari has no element full screen, so do not offer a dead button. */
+if(!viewer.requestFullscreen) $('full').hidden=true;
+
+/* Debug surface for automated smoke tests; the module scope is otherwise
+   unreachable from the console. Not a public API. */
+window.__pl={ renderEye, anaglyph, stereoPair, shapedDepth, get ready(){ return ready; } };
+
+paintIcons();
+badge();
+syncAll();
+if(!gl){
+  say('WebGL 2 is unavailable in this browser. The renderer needs it.',true);
+}else{
+  requestAnimationFrame(loop);
+  loadDemo();
+}
+</script>
+</body>
+</html>

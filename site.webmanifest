@@ -1,0 +1,12 @@
+{
+  "name": "Depthgram",
+  "short_name": "Depthgram",
+  "description": "Turn any photo into an animated 3D scene. AI depth estimation runs entirely in your browser. No upload, no account.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0C",
+  "theme_color": "#0B0B0C",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
