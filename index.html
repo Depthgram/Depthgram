@@ -1228,27 +1228,118 @@ function shapedDepth(){
    the parallax off: forests, foliage, layered landscapes. Fetched as blobs so
    the canvas stays untainted and the depth map is still exportable.
    All landscape: a portrait frame pushes the controls off the first screen. */
+/* 211 landscape scenes with real foreground-to-background separation, which is
+   what shows the parallax off: forests, foliage, canyons, layered landscapes.
+   Harvested from Unsplash search and verified to resolve at this exact URL
+   shape; premium photos 404 here, so every entry was fetched before it was
+   added. Fetched as blobs so the canvas stays untainted and the depth map is
+   still exportable. All landscape: a portrait frame pushes the controls off
+   the first screen. */
 const DEMOS=[
-  'photo-1441974231531-c6227db76b6e',  // 1400x932
-  'photo-1502082553048-f009c37129b9',  // 1400x933
-  'photo-1416879595882-3373a0480b5b',  // 1400x933
-  'photo-1470071459604-3b5ec3a7fe05',  // 1400x834
-  'photo-1511497584788-876760111969',  // 1400x788
-  'photo-1447752875215-b2761acb3c5d',  // 1400x933
-  'photo-1476231682828-37e571bc172f',  // 1400x1050
-  'photo-1519681393784-d120267933ba',  // 1400x934
-  'photo-1506905925346-21bda4d32df4',  // 1400x933
-  'photo-1497436072909-60f360e1d4b1',  // 1400x788
-  'photo-1465146344425-f00d5f5c8f07',  // 1400x927
-  'photo-1490750967868-88aa4486c946',  // 1400x934
-  'photo-1524758631624-e2822e304c36'   // 1400x933
+  'photo-1418065460487-3e41a6c84dc5', 'photo-1429743305873-d4065c15f93e', 'photo-1432298026442-0eabd0a98870',
+  'photo-1437252611977-07f74518abd7', 'photo-1437964706703-40b90bdf563b', 'photo-1440342359743-84fcb8c21f21',
+  'photo-1441974231531-c6227db76b6e', 'photo-1442120108414-42e7ea50d0b5', 'photo-1444703686981-a3abbc4d4fe3',
+  'photo-1444927714506-8492d94b4e3d', 'photo-1445294211564-3ca59d999abd', 'photo-1445711005973-54fe2a103826',
+  'photo-1445855743215-296f71d4b49c', 'photo-1445964047600-cdbdb873673d', 'photo-1446292532430-3e76f6ab6444',
+  'photo-1448375240586-882707db888b', 'photo-1456346043496-935d8f0b4084', 'photo-1458966480358-a0ac42de0a7a',
+  'photo-1462143338528-eca9936a4d09', 'photo-1466854076813-4aa9ac0fc347', 'photo-1470058869958-2a77ade41c02',
+  'photo-1475359524104-d101d02a042b', 'photo-1476362555312-ab9e108a0b7e', 'photo-1480004902249-cdb28d6a01a4',
+  'photo-1486707471592-8e7eb7e36f78', 'photo-1487525219605-eadb39ae229c', 'photo-1487621167305-5d248087c724',
+  'photo-1488330890490-c291ecf62571', 'photo-1488645411773-a3b09ea07e29', 'photo-1490100667990-4fced8021649',
+  'photo-1498408040764-ab6eb772a145', 'photo-1498429089284-41f8cf3ffd39', 'photo-1500215238115-1322078d92a3',
+  'photo-1500964757637-c85e8a162699', 'photo-1501255184224-b8e069bca278', 'photo-1501430654243-c934cec2e1c0',
+  'photo-1501554894602-ef5eab1e72f2', 'photo-1502082553048-f009c37129b9', 'photo-1502252430442-aac78f397426',
+  'photo-1503453363464-743ee9ce1584', 'photo-1503785640985-f62e3aeee448', 'photo-1504740359065-0173be5609b5',
+  'photo-1505028106030-e07ea1bd80c3', 'photo-1505333201693-150bb240ef16', 'photo-1506452305024-9d3f02d1c9b5',
+  'photo-1507139722691-cc2c94e3a2b2', 'photo-1507371341162-763b5e419408', 'photo-1508025522233-ed33103769f5',
+  'photo-1508144322886-717c284ab392', 'photo-1508255139162-e1f7b7288ab7', 'photo-1509099395498-a26c959ba0b7',
+  'photo-1509316785289-025f5b846b35', 'photo-1509992030181-1c99eb07dec8', 'photo-1511884642898-4c92249e20b6',
+  'photo-1514481043218-e965c5886f06', 'photo-1515268064940-5150b7c29f35', 'photo-1515276427842-f85802d514a2',
+  'photo-1515446134809-993c501ca304', 'photo-1516528387618-afa90b13e000', 'photo-1516825994218-b2d93290b0fd',
+  'photo-1517024785852-498ab0c02de5', 'photo-1517157488732-b80ab10430e4', 'photo-1519567770579-c2fc5436bcf9',
+  'photo-1520302630591-fd1c66edc19d', 'photo-1521706862577-47b053587f91', 'photo-1521938739809-0f40f1cfd90c',
+  'photo-1523712999610-f77fbcfc3843', 'photo-1524959725226-f4deb958e979', 'photo-1526025202335-cf944dc3f799',
+  'photo-1527642220350-24155bae0505', 'photo-1528183429752-a97d0bf99b5a', 'photo-1529511582893-2d7e684dd128',
+  'photo-1530049478161-0780526964f4', 'photo-1531252582519-2d7e6795be96', 'photo-1531390267619-48f1f162e3d2',
+  'photo-1531756716853-09a60d38d820', 'photo-1532211387405-12202cb81d7b', 'photo-1532774979012-71b828494997',
+  'photo-1532884928231-ef40895eb654', 'photo-1533907650686-70576141c030', 'photo-1534711051555-054870a0e8f2',
+  'photo-1538506392157-218c11f95129', 'photo-1538935732373-f7a495fea3f6', 'photo-1541637593725-923467404d17',
+  'photo-1541959833400-049d37f98ccd', 'photo-1542273917363-3b1817f69a2d', 'photo-1564460549828-f0219a31bf90',
+  'photo-1564559259195-65c5a9ba6db7', 'photo-1565178117145-41db4d572950', 'photo-1568010967378-b92ea68220c5',
+  'photo-1571161535093-e7642c4bd0c8', 'photo-1572990485894-cf430d6c8715', 'photo-1573126617899-41f1dffb196c',
+  'photo-1577193647731-2e0c1d04a565', 'photo-1577209299418-485f60c0d4de', 'photo-1580259679654-9276b39fd2d5',
+  'photo-1581825357620-908500d7b245', 'photo-1583470790878-4f4f3811a01f', 'photo-1583642037383-861ac716c3f0',
+  'photo-1586061968253-7bf5724aab7b', 'photo-1586094332115-680788e0182f', 'photo-1586275381277-ef645628e280',
+  'photo-1586275381609-45bb8e2ee08c', 'photo-1586581277029-5769487f3881', 'photo-1586957469525-7850e7bef283',
+  'photo-1592275788122-970c9583048a', 'photo-1592859600972-1b0834d83747', 'photo-1593013174963-be2185e98a6c',
+  'photo-1593429474506-005c2cbebbfe', 'photo-1593455071238-92dd081a39b1', 'photo-1594842059196-5b6b8fa73187',
+  'photo-1594845222818-9097c52dabb5', 'photo-1595668379004-4565dc72e10f', 'photo-1595672049786-43da1581214c',
+  'photo-1595976281013-8024ecc02575', 'photo-1597201423947-3e0028337902', 'photo-1598358214378-3f0ca65e5318',
+  'photo-1598997898925-cfb4b5106f4b', 'photo-1600333591199-1c7f60b0c6a8', 'photo-1601281426795-9fedf41df8d1',
+  'photo-1601607924234-fd2638f672b5', 'photo-1602298674761-700e96568f5f', 'photo-1602557089158-f91c696af5fd',
+  'photo-1603044236937-882428dd6a19', 'photo-1604213410393-89f141bb96b8', 'photo-1604223190546-a43e4c7f29d7',
+  'photo-1604342767712-f7448911dc51', 'photo-1604488277305-817b4add03dc', 'photo-1605196560547-b2f7281b7355',
+  'photo-1607644546432-45b4e524dd3d', 'photo-1609428538208-e3dda29ec2e1', 'photo-1609428539144-01d21dda700c',
+  'photo-1610147323479-a7fb11ffd5dd', 'photo-1610375952728-224767d9325b', 'photo-1610552050890-fe99536c2615',
+  'photo-1611080402167-ed75bae6df32', 'photo-1611222566512-cb8dd8e689e5', 'photo-1611223157162-e4cb1419a7d6',
+  'photo-1612441804231-77a36b284856', 'photo-1612539473441-dfc1cefd5e1e', 'photo-1613985212734-166ffb5a513d',
+  'photo-1615094401770-713fecd4695a', 'photo-1617159156637-dfb8655c9f95', 'photo-1620452172311-2a17a5c9c35a',
+  'photo-1620870300436-a70b605f6ebe', 'photo-1621769507764-a9b056cf2d8a', 'photo-1621848296279-7751546e9acc',
+  'photo-1622003842218-e2eba033a4eb', 'photo-1623945439695-8bb0c459b8a7', 'photo-1624818145490-b385d0593e5d',
+  'photo-1628417099242-c702a666007d', 'photo-1628440622704-59047e272aed', 'photo-1628782379401-4fff9cdcbbfe',
+  'photo-1631045282678-e4712eaaa26e', 'photo-1631540771383-f0095283db6f', 'photo-1631551437792-ae5a0fb41c49',
+  'photo-1632923754832-60642c12a7ed', 'photo-1633483781030-e62d0da3944c', 'photo-1634729609334-10b9730a0f4b',
+  'photo-1644676654534-abc4f62ceee1', 'photo-1646579079791-29bc125e314a', 'photo-1651312166126-151f9f6810cb',
+  'photo-1651705179331-05e63a0be192', 'photo-1661175668117-15a9639069ec', 'photo-1666033402224-32e982c253f7',
+  'photo-1666036891074-308a989e07e1', 'photo-1666036891083-76aa582e381e', 'photo-1666036892004-9e755280328e',
+  'photo-1666113639188-f81ab5d3b2a1', 'photo-1666198045509-1917e86f61a4', 'photo-1669583639657-0c0e958e41e2',
+  'photo-1671610466725-8d903268ea46', 'photo-1673455747815-a77f61fdee39', 'photo-1673455748521-ab7536221420',
+  'photo-1680715363920-a9f9a767f794', 'photo-1682695794816-7b9da18ed470', 'photo-1682695795255-b236b1f1267d',
+  'photo-1686560357781-a4c9229a22e1', 'photo-1687074156266-1017210add9e', 'photo-1688489307652-4dfd79722a1b',
+  'photo-1688934728389-cec784f33964', 'photo-1690091859202-bdb64d738514', 'photo-1691723363567-520457d9bed7',
+  'photo-1693287528551-b3c3a6b28843', 'photo-1694282881698-d0197b47305e', 'photo-1697906842089-ec86a4646bfb',
+  'photo-1698362696286-c1557f477e96', 'photo-1699378537091-288035b4f478', 'photo-1700192569130-13f6b3dd0fca',
+  'photo-1700513742007-3308baa7b34c', 'photo-1700656106838-5a7d917d2678', 'photo-1701238973883-6c8b01439deb',
+  'photo-1703446592359-fefe8472cc79', 'photo-1703566567802-e1945c83f0cb', 'photo-1705442200049-3108c11574ea',
+  'photo-1710020329246-094bb7c76e98', 'photo-1710020332941-c53241d07dbc', 'photo-1710020340647-3912befb9425',
+  'photo-1714593216677-1051d87f6949', 'photo-1718154710424-d44de466c549', 'photo-1718891541630-97b7027c9452',
+  'photo-1719355399839-12f72314e5f5', 'photo-1728242510217-9e2b02654522', 'photo-1728667088041-ee116cf57c6c',
+  'photo-1731157414702-a3ebce2960ec', 'photo-1732130318657-c8740c0f5215', 'photo-1751475228879-17b45e640645',
+  'photo-1752087021698-df3e90af3fb2', 'photo-1752087022364-0882c43b1933', 'photo-1758438919146-f3f59a6d2544',
+  'photo-1760947580581-789c4e5c9868'
 ];
+/* Draw without replacement: the pool is walked in a shuffled order and every
+   photo appears once before any repeats. Independent random draws feel rigged
+   at this pool size, because a birthday-problem collision shows up within a
+   handful of clicks. The bag outlives the tab, otherwise each visit would
+   restart a fresh permutation and the opening photo would recur far too often. */
+const BAG='depthgram-bag';
 let lastDemo=-1;
+
+function refillBag(){
+  const bag=[...DEMOS.keys()];
+  for(let i=bag.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [bag[i],bag[j]]=[bag[j],bag[i]];
+  }
+  /* Drawing from the back, so a bag ending on the photo already on screen
+     would repeat it across the refill seam. */
+  if(bag[bag.length-1]===lastDemo && bag.length>1)
+    [bag[0],bag[bag.length-1]]=[bag[bag.length-1],bag[0]];
+  return bag;
+}
+
 function demoURL(){
-  let i=lastDemo;
-  while(i===lastDemo) i=Math.floor(Math.random()*DEMOS.length);
-  lastDemo=i;
-  return 'https://images.unsplash.com/'+DEMOS[i]+'?w=1400&q=80&fm=jpg';
+  let bag=null;
+  try{
+    const s=JSON.parse(localStorage.getItem(BAG)||'null');
+    /* A pool edit invalidates stored indices, so the length is the schema. */
+    if(s && s.n===DEMOS.length && Array.isArray(s.bag) && s.bag.length) bag=s.bag;
+  }catch(e){}
+  if(!bag) bag=refillBag();
+  lastDemo=bag.pop();
+  try{ localStorage.setItem(BAG, JSON.stringify({n:DEMOS.length, bag})); }catch(e){}
+  return 'https://images.unsplash.com/'+DEMOS[lastDemo]+'?w=1400&q=80&fm=jpg';
 }
 async function loadDemo(){
   try{
@@ -1297,7 +1388,15 @@ function loadSample(){
    re-measure the statistics, re-derive the focus plane and motion range,
    re-upload both textures and reset the scope. Only the dials you set by
    hand (speed, exaggeration, layers, path, view) carry over. */
+/* There is one estimator session, so overlapping runs are refused: a second
+   estimator() call entered while the first is still resolving wedges the ONNX
+   session and takes the tab down with it. Mashing Random Photo is enough. */
+let loading=false;
+
 async function load(f, tag){
+  if(loading) return;
+  loading=true;
+  $('demo').disabled=true; $('open').disabled=true;
   try{
     ready=false; say('Reading the image…'); progress(0.02);
     const bmp=await createImageBitmap(f);
@@ -1353,6 +1452,9 @@ async function load(f, tag){
     console.error(err); progress(null);
     say('Could not open that: '+(err?.message||err)
       +(location.protocol==='file:'?'. Serve this over http, not file://':''), true);
+  }finally{
+    loading=false;
+    $('demo').disabled=false; $('open').disabled=false;
   }
 }
 
