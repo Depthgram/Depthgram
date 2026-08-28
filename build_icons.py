@@ -20,7 +20,7 @@ trunks on the back layers read as noise below 32 px.
 """
 
 import struct
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 OUT = {
     "favicon.svg": None,
@@ -113,14 +113,56 @@ def write_svg(path, side=64):
         ) + "Z"
 
     body = "\n".join(
-        f'  <path d="{pts(poly)}" fill="{fill}"/>' for poly, fill in shapes()
+        f'      <path d="{pts(poly)}" fill="{fill}"/>' for poly, fill in shapes()
     )
-    svg = (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {side} {side}" '
-        f'role="img" aria-label="Depthgram">\n'
-        f'  <rect width="{side}" height="{side}" rx="{RADIUS * side:.2f}" fill="{BG}"/>\n'
-        f"{body}\n</svg>\n"
+    clip = "\n".join(
+        f'      <path d="{pts(poly)}"/>' for poly, _ in shapes()
     )
+    # Vector CRT: a filter for the bloom, a pattern clipped to the silhouette
+    # for the scan. The alpha transfers keep the two halos at the same strength
+    # the raster path composites them at; feMerge alone stacks them at full
+    # opacity and washes the fills out. A renderer that ignores SVG filters still gets flat trees
+    # on the tile, which is the whole point of keeping the fills on the paths.
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {side} {side}" \
+role="img" aria-label="Depthgram">
+  <defs>
+    <filter id="dgBloom" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="{side * 0.055:.2f}" result="w0"/>
+      <feComponentTransfer in="w0" result="wide">
+        <feFuncA type="linear" slope="0.5"/>
+      </feComponentTransfer>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="{side * 0.018:.2f}" result="t0"/>
+      <feComponentTransfer in="t0" result="tight">
+        <feFuncA type="linear" slope="0.85"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="wide"/>
+        <feMergeNode in="tight"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="dgScan" width="4" height="{side / 42.7:.2f}" patternUnits="userSpaceOnUse">
+      <rect width="4" height="{side / 103.2:.2f}" fill="#000" opacity="{SCAN_DARK}"/>
+    </pattern>
+    <clipPath id="dgClip">
+{clip}
+    </clipPath>
+  </defs>
+  <style>
+    /* An SVG drawn as an image gets a viewport the size it is drawn at, so the
+       same size gating the PNGs use applies here: no scan under {SCAN_MIN} px,
+       no bloom under {BLOOM_MIN} px, because neither survives a tab-strip
+       favicon. A renderer that ignores this only ever over-decorates. */
+    @media (max-width: {SCAN_MIN - 1}px) {{ #dgScanRect {{ display: none }} }}
+    @media (max-width: {BLOOM_MIN - 1}px) {{ #dgArt {{ filter: none }} }}
+  </style>
+  <rect width="{side}" height="{side}" rx="{RADIUS * side:.2f}" fill="{BG}"/>
+  <g id="dgArt" filter="url(#dgBloom)">
+{body}
+  </g>
+  <rect id="dgScanRect" width="{side}" height="{side}" fill="url(#dgScan)" clip-path="url(#dgClip)"/>
+</svg>
+"""
     with open(path, "w") as f:
         f.write(svg)
 
@@ -137,17 +179,62 @@ def rounded_mask(side, radius):
     return m.resize((side, side), Image.LANCZOS)
 
 
-def render(side, *, rounded=True, scale=1.0):
+# ---- CRT treatment
+# The same bloom and scan the page draws, baked in here because an icon has no
+# stylesheet. Both are size-gated: the effect is a texture across the artwork,
+# and below these sizes there are not enough pixels to hold one, so a 16 px
+# favicon would only turn to mush. 96 px is where the scan period is still two
+# device pixels; under that the lines eat the silhouette.
+BLOOM_MIN = 48
+SCAN_MIN = 96
+SCAN_LINES = 34         # lines across the artwork, matching the page mark
+SCAN_DARK = 0.42
+ART_H = (TREE["trunk_bot"] - TREE["apex"]) * ART_SCALE   # fraction of the side
+
+
+def bloom(im, art, side):
+    """Two blurred copies of the artwork under it, wide then tight: the same
+    pair of drop-shadows the page mark carries."""
+    for radius, gain in ((side * 0.055, 0.5), (side * 0.018, 0.85)):
+        halo = art.filter(ImageFilter.GaussianBlur(radius))
+        halo.putalpha(halo.split()[3].point(lambda v: int(min(255, v * gain))))
+        im.alpha_composite(halo)
+    return im
+
+
+def scanlines(art, side, scale):
+    """Darken every nth row of the artwork itself. Clipped to the silhouette by
+    construction: only the artwork's own pixels are touched, so the tile behind
+    it never picks up a striped box."""
+    period = max(2, round(ART_H * scale * side / SCAN_LINES))
+    bar = max(1, int(period * 0.41 + 0.15))
+    lines = Image.new("L", (side, side), 255)
+    d = ImageDraw.Draw(lines)
+    for y in range(0, side, period):
+        d.rectangle((0, y, side, y + bar - 1), fill=int(255 * (1 - SCAN_DARK)))
+    r, g, b, a = art.split()
+    return Image.merge("RGBA", (ImageChops.multiply(r, lines),
+                                ImageChops.multiply(g, lines),
+                                ImageChops.multiply(b, lines), a))
+
+
+def render(side, *, rounded=True, scale=1.0, crt=True):
     """Icon at `side` px. `scale` shrinks the mark inside the square."""
     big = side * SS
-    im = Image.new("RGBA", (big, big), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.rectangle((0, 0, big, big), fill=BG)
+    art = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(art)
     off = (1 - scale) / 2
     for poly, fill in shapes():
         d.polygon([((off + x * scale) * big, (off + y * scale) * big) for x, y in poly],
                   fill=fill)
-    im = im.resize((side, side), Image.LANCZOS)
+    art = art.resize((side, side), Image.LANCZOS)
+
+    im = Image.new("RGBA", (side, side), BG)
+    if crt and side >= BLOOM_MIN:
+        im = bloom(im, art, side)
+    if crt and side >= SCAN_MIN:
+        art = scanlines(art, side, scale)
+    im.alpha_composite(art)
     if rounded:
         im.putalpha(rounded_mask(side, int(round(RADIUS * side))))
     return im
