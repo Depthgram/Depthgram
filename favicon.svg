@@ -1,9 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0B0B0C"/>
-  <g fill="none" stroke-linecap="round">
-    <rect x="12" y="16" width="40" height="30" rx="6" stroke="#5AC8FA" stroke-width="3.5" opacity=".45"/>
-    <rect x="16" y="20" width="40" height="30" rx="6" stroke="#0A84FF" stroke-width="3.5"/>
-    <circle cx="27" cy="30" r="3" fill="#0A84FF" stroke="none"/>
-    <path d="M20 44l9-8 6 5.5 7-7 10 9.5" stroke="#0A84FF" stroke-width="3.5" stroke-linejoin="round"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Depthgram">
+  <rect width="64" height="64" rx="11.26" fill="#0B0B0C"/>
+  <path d="M26.49 11.06 L36.88 25.43 L33.29 26.16 L40.98 36.66 L36.82 37.39 L44.18 47.88 L8.81 47.88 L16.17 37.39 L12.01 36.66 L19.70 26.16 L16.11 25.43Z" fill="#6A2BD9"/>
+  <path d="M32.62 11.06 L43.00 25.43 L39.41 26.16 L47.11 36.66 L42.95 37.39 L50.30 47.88 L14.94 47.88 L22.29 37.39 L18.13 36.66 L25.83 26.16 L22.24 25.43Z" fill="#0A84FF"/>
+  <path d="M38.23 11.06 L48.61 25.43 L45.02 26.16 L52.72 36.66 L48.56 37.39 L55.91 47.88 L20.55 47.88 L27.90 37.39 L23.74 36.66 L31.44 26.16 L27.85 25.43Z" fill="#2BE7F0"/>
+  <path d="M34.19 47.88 L42.27 47.88 L42.27 54.18 L34.19 54.18Z" fill="#2BE7F0"/>
 </svg>
