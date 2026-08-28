@@ -81,8 +81,11 @@ machine and break on someone else's.
   or a taste constant; the comments above them record why those fail.
 - **Size caps:** model input longest side `MAXW 1400`; render target `MAXPIX 4.2e6`,
   DPR clamped to 2. Raising them is a memory/perf decision, not a tweak.
-- **Touch and iOS:** lifting the finger sets `ptr.inside=false` (touch has no hover);
-  iOS Safari has no element fullscreen, so the button hides. Don't resurrect it.
+- **Touch and iOS:** lifting the finger sets `ptr.inside=false` (touch has no hover).
+  iPhone Safari has no element fullscreen API, so `setFS()` falls back to the
+  `.pseudofs` fixed-position class there; every fullscreen call site must go
+  through `isFS()`/`setFS()`/`fsSync()`, never `document.fullscreenElement`
+  directly, or the two mechanisms disagree about which one is active.
 - **Recording restores state in `finally`.** `recordClip()` forces play/orbit/parallax
   view; any early exit must still restore the user's settings.
 - **Every wait goes through `setBusy()` and `waiting()`.** `setBusy(true)`

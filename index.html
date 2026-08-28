@@ -193,6 +193,16 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items
   aspect-ratio:auto;width:100vw;height:100vh;
   border:0;border-radius:0;box-shadow:none;background:#000;
 }
+/* iPhone Safari has no element fullscreen API, so full screen there is this
+   fixed-position fallback: same geometry, same HUD. dvh, not vh, because the
+   collapsing URL bar changes the viewport height under the frame. */
+.viewer.pseudofs{
+  position:fixed;inset:0;z-index:50;margin:0;
+  aspect-ratio:auto;width:100vw;height:100vh;height:100dvh;max-height:none;
+  border:0;border-radius:0;box-shadow:none;background:#000;
+}
+.viewer.pseudofs .hud{display:flex}
+body.noscroll{overflow:hidden}
 .drop{
   position:absolute;inset:14px;border-radius:calc(var(--radius) - 8px);
   border:1.5px dashed var(--stroke);
@@ -1150,16 +1160,32 @@ function resize(){
   if(out.width!==W || out.height!==H){ out.width=W; out.height=H; gl.viewport(0,0,W,H); }
 }
 new ResizeObserver(resize).observe(viewer);
-document.addEventListener('fullscreenchange',()=>{
-  const on=!!document.fullscreenElement;
+
+/* Full screen has two mechanisms: the real API where it exists, and the
+   .pseudofs fallback on iPhone Safari, which has no element fullscreen at
+   all. Every call site goes through these three, so the button, the F key,
+   the HUD and the Escape path cannot disagree about which one is active. */
+const HASFS = !!viewer.requestFullscreen;
+const isFS  = () => HASFS ? !!document.fullscreenElement : viewer.classList.contains('pseudofs');
+function setFS(on){
+  /* The request can reject (backgrounded window, revoked gesture); the label
+     only flips on fullscreenchange, so a rejection needs no cleanup. */
+  if(HASFS){ on ? viewer.requestFullscreen().catch(()=>{}) : document.exitFullscreen(); return; }
+  viewer.classList.toggle('pseudofs', on);
+  document.body.classList.toggle('noscroll', on);
+  fsSync();
+}
+function fsSync(){
+  const on=isFS();
   setBtn('full', on?'collapse':'expand', on?'Exit Full Screen':'Full Screen');
   if(on) bumpHud(); else $('hud').classList.remove('on');
   resize();
-});
+}
+document.addEventListener('fullscreenchange',fsSync);
 
 let hudTimer=0;
 function bumpHud(){
-  if(!document.fullscreenElement) return;
+  if(!isFS()) return;
   $('hud').classList.add('on');
   clearTimeout(hudTimer);
   hudTimer=setTimeout(()=>$('hud').classList.remove('on'), 2600);
@@ -1247,7 +1273,7 @@ $('view').addEventListener('click',e=>{
 $('cue-pointer').addEventListener('change',e=>{ P.cues.pointer=e.target.checked; syncAll(); save(); });
 $('hud-ptr').addEventListener('click',()=>{ P.cues.pointer=!P.cues.pointer; syncAll(); save(); bumpHud(); });
 $('hud-play').addEventListener('click',()=>{ playing=!playing; syncAll(); bumpHud(); });
-$('hud-exit').addEventListener('click',()=>document.exitFullscreen());
+$('hud-exit').addEventListener('click',()=>setFS(false));
 $('cue-dof').addEventListener('change',e=>{ P.cues.dof=e.target.checked; save(); });
 
 /* Sub-pixel swing notched to a whole number of frames. */
@@ -1271,10 +1297,7 @@ $('reset').addEventListener('click',()=>{
   syncAll(); save(); say('Settings reset to defaults.');
 });
 $('play').addEventListener('click',()=>{ playing=!playing; syncAll(); });
-$('full').addEventListener('click',()=>{
-  if(document.fullscreenElement) document.exitFullscreen();
-  else viewer.requestFullscreen?.();
-});
+$('full').addEventListener('click',()=>setFS(!isFS()));
 $('open').addEventListener('click',()=>file.click());
 $('demo').addEventListener('click',loadDemo);
 drop.addEventListener('click',()=>file.click());
@@ -1389,10 +1412,10 @@ addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k===' '){ e.preventDefault(); playing=!playing; syncAll(); }
   else if(k==='d'){ P.view=(P.view+1)%5; syncAll(); save(); }
-  else if(k==='f'){ document.fullscreenElement?document.exitFullscreen():viewer.requestFullscreen?.(); }
+  else if(k==='f'){ setFS(!isFS()); }
   else if(k==='p'){ P.cues.pointer=!P.cues.pointer; syncAll(); save(); bumpHud(); }
   else if(k==='r'){ $('reset').click(); }
-  else if(k==='escape'){ closeMenu(); }
+  else if(k==='escape'){ closeMenu(); if(!HASFS && isFS()) setFS(false); }
 });
 
 /* ---------------------------------------------------------------- export */
@@ -2113,8 +2136,6 @@ if(COARSE){
   drop.querySelector('strong').textContent='Tap to Choose a Photo';
   drop.querySelector('span:last-of-type').textContent='Or drop one here';
 }
-/* iOS Safari has no element full screen, so do not offer a dead button. */
-if(!viewer.requestFullscreen) $('full').hidden=true;
 /* Tilt is only offered where it means something: a touch device that reports
    orientation. Laptops technically fire the event and it reads as broken. */
 if(COARSE && 'DeviceOrientationEvent' in window) $('tiltrow').hidden=false;
