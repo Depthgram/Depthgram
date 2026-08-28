@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <title>Depthgram | Free 3D Photo Effect &amp; Depth Map Generator</title>
-<meta name="description" content="Turn any photo into a 3D parallax animation, depth map, or red-cyan anaglyph. Free, in your browser. No upload, no sign-up, no watermark.">
-<meta name="keywords" content="3d photo effect, depth map generator, anaglyph maker, 2.5d parallax, photo to 3d, image to depth map, stereo pair generator, depth anything v2, free online tool, browser ai">
+<meta name="description" content="Turn any photo into a 3D parallax animation, live red/cyan anaglyph, VR-ready stereo pair or depth map. Free, in your browser. No upload, no watermark.">
+<meta name="keywords" content="3d photo effect, depth map generator, anaglyph maker, anaglyph viewer, red cyan 3d, 2.5d parallax, photo to 3d, image to depth map, stereo pair generator, side by side 3d, vr photo viewer, depth anything v2, free online tool, browser ai">
 <meta name="author" content="Alex Spataru">
 <meta name="application-name" content="Depthgram">
 <meta name="generator" content="Depthgram">
@@ -30,7 +30,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Depthgram">
 <meta property="og:title" content="Depthgram: 3D Photos from Any Image, Free and Private">
-<meta property="og:description" content="Drop a photo, get an animated 3D scene. AI depth runs in your browser and nothing is uploaded. Export depth maps, anaglyphs, stereo pairs and looping videos.">
+<meta property="og:description" content="Drop a photo, get an animated 3D scene. Watch it live in red/cyan anaglyph or side-by-side stereo, and export depth maps, anaglyphs, stereo pairs and looping videos. AI depth runs in your browser; nothing is uploaded.">
 <meta property="og:url" content="https://depthgram.com/">
 <meta property="og:image" content="https://depthgram.com/og.png">
 <meta property="og:image:type" content="image/png">
@@ -86,6 +86,8 @@
       "featureList": [
         "Monocular depth estimation on-device",
         "Animated parallax playback locked to the display refresh rate",
+        "Live red/cyan anaglyph 3D view",
+        "Live parallel side-by-side stereo 3D view",
         "Depth map export as PNG",
         "Red/cyan anaglyph export",
         "Parallel side-by-side stereo pair export",
@@ -176,6 +178,9 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items
 /* ---------------------------------------------------------------- stage */
 .viewer{
   position:relative;overflow:hidden;
+  /* max-height transfers through aspect-ratio into a max-width, so a capped
+     frame is narrower than its column and would otherwise hug the left. */
+  margin-inline:auto;
   aspect-ratio:var(--ar,16/10);
   border-radius:var(--radius);
   background:rgba(0,0,0,.55);
@@ -200,11 +205,6 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items
 .viewer.over{outline:2px solid var(--accent);outline-offset:-2px}
 .drop strong{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .drop span{font-size:14px;color:var(--label)}
-
-/* Always occupies its 3 px, so starting a load cannot shift the frame. */
-.bar{height:3px;border-radius:2px;background:var(--track);overflow:hidden;margin:0 0 10px;opacity:0;transition:opacity .25s}
-.bar.show{opacity:1}
-.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .18s linear}
 
 .meta{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-top:12px;min-height:20px}
 .status{font-size:13px;color:var(--label);letter-spacing:-.005em}
@@ -444,6 +444,8 @@ input[type=range]:focus-visible{outline:3px solid color-mix(in srgb,var(--accent
   transition:color .2s;
 }
 .seg button[aria-pressed=true]{color:var(--ink)}
+/* Five view modes in the same 340px panel; the labels give back a half point. */
+#view button{font-size:12px;letter-spacing:-.02em;padding-left:2px;padding-right:2px}
 .seg button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent)}
 
 /* iOS-style switch */
@@ -621,8 +623,6 @@ footer .sep{opacity:.5}
       </div>
     </div>
 
-    <div class="bar" id="bar"><i id="barfill"></i></div>
-
     <div class="viewer" id="viewer">
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Open a photo">
         <span data-icon="photo"></span>
@@ -685,10 +685,12 @@ footer .sep{opacity:.5}
           guessed.</p>
         </article>
         <article>
-          <h3>Exports you can actually use</h3>
-          <p>PNG frames and depth maps, red/cyan anaglyphs, parallel
-          side-by-side stereo pairs for a VR viewer, and MP4 or WebM clips cut
-          to a whole number of sweeps so they loop without a seam.</p>
+          <h3>Watch it in real 3D, then export</h3>
+          <p>Switch the live view to a red/cyan anaglyph for paper glasses, or
+          a parallel side-by-side stereo pair for a VR viewer, both animated in
+          real time. Then export PNG frames, depth maps, anaglyphs, stereo
+          pairs, and MP4 or WebM clips cut to a whole number of camera sweeps
+          so they loop without a seam.</p>
         </article>
       </div>
     </div>
@@ -758,17 +760,21 @@ footer .sep{opacity:.5}
 
       <div class="field">
         <div class="head"><label>View</label></div>
-        <div class="seg" id="view" style="--n:3;--i:0">
+        <div class="seg" id="view" style="--n:5;--i:0">
           <span class="ind"></span>
           <button data-v="0" aria-pressed="true">Parallax</button>
-          <button data-v="1" aria-pressed="false">Depth Map</button>
+          <button data-v="1" aria-pressed="false">Depth</button>
           <button data-v="2" aria-pressed="false">Split</button>
+          <button data-v="3" aria-pressed="false">Anaglyph</button>
+          <button data-v="4" aria-pressed="false">Stereo</button>
         </div>
+        <p class="note" id="viewsub"></p>
       </div>
 
       <div class="field">
         <label class="sw"><span>Follow Pointer</span><input type="checkbox" id="cue-pointer" checked><i></i></label>
         <label class="sw"><span>Depth of Field</span><input type="checkbox" id="cue-dof"><i></i></label>
+        <label class="sw" id="tiltrow" hidden><span>Tilt to Look</span><input type="checkbox" id="cue-tilt"><i></i></label>
       </div>
 
       <div class="field">
@@ -865,11 +871,6 @@ const valToLog=(x,lo,hi)=>Math.round(1000*Math.log(x/lo)/Math.log(hi/lo));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 function say(m, isErr){ status.textContent=m||''; status.classList.toggle('err', !!isErr); }
-function progress(f){
-  const b=$('bar');
-  if(f==null){ b.classList.remove('show'); return; }
-  b.classList.add('show'); $('barfill').style.width=(clamp(f,0,1)*100).toFixed(1)+'%';
-}
 
 /* ---------------------------------------------------------------- waiting */
 /* One screen owns every wait, and the panel is inert for its duration. The
@@ -971,8 +972,9 @@ uniform float uGain;     // depth exaggeration about the focus plane
 uniform float uQuant;    // >1 snaps depth to that many flat planes
 uniform float uDof;
 uniform float uAspect;   // cw/ch, keeps the defocus disc round in pixels
-uniform int   uView;     // 0 parallax, 1 depth, 2 split
+uniform int   uView;     // 0 parallax, 1 depth, 2 split, 3 anaglyph, 4 stereo
 uniform float uSplit;
+uniform float uSep;      // half the eye separation, uv units; 0 outside stereo views
 uniform vec2  uPx;       // 1/output resolution
 
 vec2 cl(vec2 uv){ return clamp(uv, vec2(0.0015), vec2(0.9985)); }
@@ -1000,24 +1002,24 @@ float dAt(vec2 uv){
 
 /* Steep parallax with bisection refinement. h runs 1 (near) to 0 (far); the
    first crossing is the nearest surface, so occlusion comes out right. */
-vec2 march(vec2 uv0){
+vec2 march(vec2 uv0, vec2 sh){
   float N  = float(uSteps);
   float dh = 1.0/N;
   float h  = 1.0;
-  float pd = dAt(uv0 + uShift*(h-uPivot));
-  if(pd >= h) return uv0 + uShift*(h-uPivot);
+  float pd = dAt(uv0 + sh*(h-uPivot));
+  if(pd >= h) return uv0 + sh*(h-uPivot);
   for(int i=0;i<uSteps;i++){
     h -= dh;
-    if(dAt(uv0 + uShift*(h-uPivot)) >= h){
+    if(dAt(uv0 + sh*(h-uPivot)) >= h){
       float hit = h, miss = h + dh;
       for(int j=0;j<6;j++){
         float m = 0.5*(hit+miss);
-        if(dAt(uv0 + uShift*(m-uPivot)) >= m) hit = m; else miss = m;
+        if(dAt(uv0 + sh*(m-uPivot)) >= m) hit = m; else miss = m;
       }
-      return uv0 + uShift*(0.5*(hit+miss)-uPivot);
+      return uv0 + sh*(0.5*(hit+miss)-uPivot);
     }
   }
-  return uv0 + uShift*(0.0-uPivot);
+  return uv0 + sh*(0.0-uPivot);
 }
 
 /* A fixed tap ring bands badly once the radius grows, so this gathers on a
@@ -1048,7 +1050,13 @@ vec3 shade(vec2 uv, float d){
 }
 
 void main(){
-  vec2 uv0 = (vUv-0.5)*uZoom*uCover + 0.5;
+  /* Stereo SBS folds two eyes into one draw: each half of the canvas remaps
+     to the full frame and gets its own eye offset. Parallel layout, left eye
+     left, the arrangement VR viewers and renderEye() agree on. */
+  vec2 tuv = vUv;
+  float eye = 0.0;
+  if(uView==4){ eye = tuv.x < 0.5 ? -1.0 : 1.0; tuv.x = fract(tuv.x*2.0); }
+  vec2 uv0 = (tuv-0.5)*uZoom*uCover + 0.5;
   bool asDepth = (uView==1) || (uView==2 && vUv.x > uSplit);
 
   vec3 col;
@@ -1056,8 +1064,17 @@ void main(){
     /* the shaped field the parallax actually marches, so the layer count and
        the exaggeration are visible here. Save Depth Map writes the same. */
     col = vec3(dAt(uv0));
+  }else if(uView==3){
+    /* Live half-colour anaglyph, the same combine as the export: the red
+       channel carries the left eye's luminance, the right eye keeps its own
+       green and blue. Two marches per pixel; the toggle is the budget. */
+    vec2 hl = march(uv0, uShift - vec2(uSep, 0.0));
+    vec2 hr = march(uv0, uShift + vec2(uSep, 0.0));
+    vec3 L = shade(hl, dAt(hl));
+    vec3 R = shade(hr, dAt(hr));
+    col = vec3(dot(L, vec3(0.299, 0.587, 0.114)), R.g, R.b);
   }else{
-    vec2 hit = march(uv0);
+    vec2 hit = march(uv0, uShift + eye*vec2(uSep, 0.0));
     col = shade(hit, dAt(hit));
   }
 
@@ -1093,7 +1110,7 @@ function compile(){
   gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
 
   for(const n of ['uColor','uDepth','uShift','uPivot','uSteps','uZoom','uCover','uGain',
-                  'uQuant','uDof','uAspect','uView','uSplit','uPx'])
+                  'uQuant','uDof','uAspect','uView','uSplit','uPx','uSep'])
     U[n]=gl.getUniformLocation(prog,n);
   gl.uniform1i(U.uColor,0);
   gl.uniform1i(U.uDepth,1);
@@ -1194,6 +1211,13 @@ function syncAll(){
       : 'A cut-out diorama.');
   setSeg('seg', ['orbit','lateral','still'].indexOf(P.path));
   setSeg('view', P.view);
+  $('viewsub').textContent=[
+    'The animated parallax render.',
+    'The shaped field the renderer marches.',
+    'Drag across the frame to move the divider.',
+    'Live red/cyan 3D. Grab paper glasses; the left eye rides the red channel.',
+    'Live parallel side-by-side 3D, for a VR viewer or straight (not crossed) free-viewing.'
+  ][P.view]||'';
   $('cue-pointer').checked=P.cues.pointer;
   $('cue-dof').checked=P.cues.dof;
   setBtn('play', playing?'pause':'play', playing?'Pause':'Play');
@@ -1289,6 +1313,46 @@ viewer.addEventListener('pointerleave',()=>{ ptr.inside=false; });
   if(e.pointerType!=='mouse') ptr.inside=false;
 }));
 
+/* ---- tilt: the accelerometer as the pointer. Session-only on purpose: iOS
+   grants motion access per page load and only from a user gesture, so a
+   persisted "on" could never re-arm itself. Not part of P, so no STORE bump. */
+const tilt={on:false, base:null, x:0, y:0};
+const TILT_R=15;               // degrees of tilt for full deflection
+
+function onOrient(e){
+  if(e.gamma==null || e.beta==null) return;
+  /* Map device axes into screen axes: gamma is left-right and beta is
+     front-back only while portrait; a rotated screen swaps and flips them. */
+  const ang=(screen.orientation && screen.orientation.angle)||0;
+  let x, y;
+  if(ang===90){ x=e.beta;  y=-e.gamma; }
+  else if(ang===270){ x=-e.beta; y=e.gamma; }
+  else if(ang===180){ x=-e.gamma; y=-e.beta; }
+  else { x=e.gamma; y=e.beta; }
+  /* The first reading is the neutral pose: however the phone is held right
+     now is the centre, not an absolute "flat on the table". */
+  if(!tilt.base){ tilt.base={x, y}; return; }
+  tilt.x=clamp((x-tilt.base.x)/TILT_R, -1, 1);
+  tilt.y=clamp((y-tilt.base.y)/TILT_R, -1, 1);
+}
+async function setTilt(on){
+  if(on && typeof DeviceOrientationEvent!=='undefined'
+        && DeviceOrientationEvent.requestPermission){
+    try{ if(await DeviceOrientationEvent.requestPermission()!=='granted') on=false; }
+    catch(e){ on=false; }
+    if(!on) say('Motion access was declined; tilt stays off.', true);
+  }
+  tilt.on=on; tilt.base=null; tilt.x=0; tilt.y=0;
+  $('cue-tilt').checked=on;
+  if(on){
+    addEventListener('deviceorientation', onOrient);
+    say('Tilt the phone to look around. Toggling recentres.');
+  }else removeEventListener('deviceorientation', onOrient);
+}
+$('cue-tilt').addEventListener('change',e=>setTilt(e.target.checked));
+/* A rotation makes the captured neutral pose meaningless. */
+addEventListener('orientationchange',()=>{ tilt.base=null; });
+
 /* The coach demonstrates the two camera states rather than describing them,
    and retires for good on the first real pointer move inside the frame. */
 const COACHED='depthgram-coached';
@@ -1324,7 +1388,7 @@ addEventListener('keydown',e=>{
   if(loading) return;
   const k=e.key.toLowerCase();
   if(k===' '){ e.preventDefault(); playing=!playing; syncAll(); }
-  else if(k==='d'){ P.view=(P.view+1)%3; syncAll(); save(); }
+  else if(k==='d'){ P.view=(P.view+1)%5; syncAll(); save(); }
   else if(k==='f'){ document.fullscreenElement?document.exitFullscreen():viewer.requestFullscreen?.(); }
   else if(k==='p'){ P.cues.pointer=!P.cues.pointer; syncAll(); save(); bumpHud(); }
   else if(k==='r'){ $('reset').click(); }
@@ -1640,9 +1704,15 @@ function demoURL(){
   demoPage='https://unsplash.com/photos/'+id+'?utm_source=depthgram&utm_medium=referral';
   return 'https://images.unsplash.com/'+token+'?w=1400&q=80&fm=jpg';
 }
+/* The fetch lives inside the busy path too: without this the controls stay
+   live while the photo downloads, and mashing Random Photo races parallel
+   fetches whose blobs load() then silently discards. */
 async function loadDemo(){
+  if(loading) return;
+  setBusy(true);
+  waiting('Fetching a photo\u2026', '', null);
+  say('Fetching a photo\u2026');
   try{
-    say('Fetching a photo…'); progress(0.01);
     const r=await fetch(demoURL(),{mode:'cors'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     await load(await r.blob(),'demo');
@@ -1650,6 +1720,10 @@ async function loadDemo(){
     console.warn('photo unavailable',err);
     say('Could not reach Unsplash, falling back to the built-in scene.');
     loadSample();
+  }finally{
+    /* load() clears these itself; this covers the fetch-failed window where
+       loadSample()'s own load() is still spinning up (loading guards it). */
+    if(!loading){ waitingDone(); setBusy(false); }
   }
 }
 
@@ -1697,7 +1771,7 @@ async function load(f, tag){
   loading=true;
   setBusy(true);
   try{
-    ready=false; say('Reading the image…'); progress(0.02);
+    ready=false; say('Reading the image…');
     waiting('Reading the photo', '', null);
     const bmp=await createImageBitmap(f);
     const s=Math.min(1, MAXW/Math.max(bmp.width,bmp.height));
@@ -1717,7 +1791,6 @@ async function load(f, tag){
         files.set(p.file, {loaded:p.loaded, total:p.total});
         let l=0, t=0;
         for(const v of files.values()){ l+=v.loaded; t+=v.total; }
-        progress(l/t);
         waiting('Downloading the depth model',
                 'About 50 MB, once. Your browser keeps it cached for next time.',
                 l/t, MB(l)+' / '+MB(t)+' MB');
@@ -1737,7 +1810,7 @@ async function load(f, tag){
       }
     }
 
-    say('Estimating depth…'); progress(0.9);
+    say('Estimating depth…');
     waiting('Estimating depth', 'The model is reading your photo. This runs on your device.', null);
     const blob = await new Promise(r=>srcCanvas.toBlob(r,'image/png'));
     const url  = URL.createObjectURL(blob);
@@ -1762,11 +1835,11 @@ async function load(f, tag){
     hasScene=true;
     $('credit').hidden = tag!=='demo';
     if(tag==='demo' && demoPage) $('creditlink').href=demoPage;
-    ready=true; progress(null);
+    ready=true;
     say((tag==='sample'?'Built-in scene':tag==='demo'?'Unsplash photo':'Photo')
       +' · '+cw+' × '+ch+' · focus and motion range measured from the depth map.');
   }catch(err){
-    console.error(err); progress(null);
+    console.error(err);
     say('Could not open that: '+(err?.message||err)
       +(location.protocol==='file:'?'. Serve this over http, not file://':''), true);
   }finally{
@@ -1907,13 +1980,21 @@ function render(){
   const reach=reachNow();
   const zoom=clamp(1 - 2*Math.max(ampU,ampV)*reach - 0.004, 0.55, 1.0);
 
+  /* Stereo views split the amplitude: half to the camera path, half to the
+     eye baseline, so |shift| never leaves the envelope the overscan above is
+     computed for. renderEye() exports keep the full ±amp separation. */
+  const stereo = P.view>=3;
+  const mS = stereo ? 0.5 : 1;
+
   /* Aspect fit: sample a narrower slice of whichever axis has to be cropped
-     so the image covers the canvas instead of letterboxing inside it. */
-  const canvasAR=out.width/out.height, imgAR=cw/ch;
+     so the image covers the canvas instead of letterboxing inside it. SBS
+     gives each eye half the canvas, so the eye viewport is half as wide. */
+  const canvasAR=(P.view===4 ? out.width*0.5 : out.width)/out.height, imgAR=cw/ch;
   const cover = canvasAR > imgAR ? [1, imgAR/canvasAR] : [canvasAR/imgAR, 1];
 
   gl.useProgram(prog);
-  gl.uniform2f(U.uShift, cam.x*ampU, cam.y*ampV);
+  gl.uniform2f(U.uShift, cam.x*ampU*mS, cam.y*ampV*mS);
+  gl.uniform1f(U.uSep, stereo ? ampU*0.5 : 0);
   gl.uniform1f(U.uPivot, P.piv);
   gl.uniform1i(U.uSteps, clamp(P.layers|0,2,192));
   gl.uniform1f(U.uZoom, zoom);
@@ -1936,13 +2017,15 @@ function loop(now){
   fps += ((1/Math.max(dt,1e-4)) - fps)*0.08;
   if(playing){ tAccum += dt; phaseFrame++; }
 
-  const usePtr = P.cues.pointer && ptr.inside && P.view!==2;
+  const usePtr  = P.cues.pointer && ptr.inside && P.view!==2;
+  const useTilt = !usePtr && tilt.on && tilt.base && P.view!==2;
   let tx, ty;
   if(usePtr){ tx=ptr.x; ty=ptr.y; }
+  else if(useTilt){ tx=tilt.x; ty=tilt.y; }
   else { const v=pathVec(); tx=v[0]; ty=v[1]; }
 
   /* Frame-locked motion must not be smoothed, or the notch smears. */
-  const k = usePtr ? 1-Math.exp(-dt*9) : 1;
+  const k = (usePtr||useTilt) ? 1-Math.exp(-dt*9) : 1;
   cam.x += (tx-cam.x)*k;
   cam.y += (ty-cam.y)*k;
 
@@ -2032,6 +2115,9 @@ if(COARSE){
 }
 /* iOS Safari has no element full screen, so do not offer a dead button. */
 if(!viewer.requestFullscreen) $('full').hidden=true;
+/* Tilt is only offered where it means something: a touch device that reports
+   orientation. Laptops technically fire the event and it reads as broken. */
+if(COARSE && 'DeviceOrientationEvent' in window) $('tiltrow').hidden=false;
 
 /* Debug surface for automated smoke tests; the module scope is otherwise
    unreachable from the console. Not a public API. */

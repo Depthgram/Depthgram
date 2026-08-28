@@ -61,6 +61,10 @@ machine and break on someone else's.
 - **Eye convention:** `cam.x = +1` is the right eye (near planes slide left on screen),
   `-1` the left. The anaglyph puts left-eye luminance in the red channel (half-colour),
   the stereo pair is parallel SBS. Swapping either inverts perceived depth for users.
+  The live Anaglyph and Stereo views (`uView` 3 and 4) ride the same convention through
+  `uSep`: half the amplitude goes to the camera path, half to the eye baseline, so the
+  total shift never leaves the envelope the overscan zoom is computed for. Exports keep
+  the full separation; do not "fix" the live views to match them.
 - **A `DEMOS` entry is `cdnToken|photoId`.** The token serves the pixels, the
   eleven-character id is what the credit link points at. Ids can contain dashes
   and underscores, so never parse one out of a slug by splitting on a dash; take
@@ -112,10 +116,18 @@ machine and break on someone else's.
   defs (`#dgFar`, `#dgMid`, `#dgNear`, plus `#dgClip`, which must stay a copy
   of the same four paths). The header and the wait screen are `<use>`
   references. Adding a third copy is how the marks start disagreeing.
-- **The CRT look is page-only**: bloom is a CSS filter, the scanlines are a
-  rect clipped by `#dgClip`. Never bake it into the generated icons,
-  and never reach for `mix-blend-mode` here: the page background is painted on
-  the canvas, so a blended overlay has no backdrop and prints a grey box.
+- **The CRT look is size-gated everywhere.** Bloom lands at 48 px and up, the
+  scan at 96 px and up; below that there are not enough pixels to hold a
+  texture and a favicon just turns to mush. `build_icons.py` bakes both into
+  the rasters and writes the same two thresholds into `favicon.svg` as media
+  queries, which work because an SVG drawn as an image gets a viewport the
+  size it is drawn at. In the page the effect is CSS bloom plus a rect clipped
+  by `#dgClip`; never reach for `mix-blend-mode` there, since the page
+  background is painted on the canvas, so a blended overlay has no backdrop
+  and prints a grey box.
+- **Scanlines are drawn on the artwork, never over the tile.** The raster path
+  multiplies the art layer itself and the vector path clips to the silhouette,
+  which is what keeps a striped square off the icon.
 - The GitHub organization is `Depthgram`; the site repo is `Depthgram/Depthgram` and
   the org profile lives in `Depthgram/.github`.
 
