@@ -6,38 +6,94 @@
 <meta name="color-scheme" content="dark">
 <title>Depthgram | Free 3D Photo Effect &amp; Depth Map Generator</title>
 <meta name="description" content="Turn any photo into a 3D parallax animation, depth map, or red-cyan anaglyph. Free, in your browser. No upload, no sign-up, no watermark.">
-<meta name="keywords" content="3d photo effect, depth map generator, anaglyph maker, 2.5d parallax, photo to 3d, depth anything, free online tool">
+<meta name="keywords" content="3d photo effect, depth map generator, anaglyph maker, 2.5d parallax, photo to 3d, image to depth map, stereo pair generator, depth anything v2, free online tool, browser ai">
+<meta name="author" content="Alex Spataru">
+<meta name="application-name" content="Depthgram">
+<meta name="generator" content="Depthgram">
 <link rel="canonical" href="https://depthgram.com/">
 <meta name="theme-color" content="#0B0B0C">
-<meta name="robots" content="index,follow">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="manifest" href="site.webmanifest">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="googlebot" content="index, follow">
+
+<!-- Icons. favicon.svg covers evergreen browsers; the PNG and ICO are the
+     fallbacks Safari, Windows pinning and feed readers still ask for. -->
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Depthgram">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Depthgram">
 <meta property="og:title" content="Depthgram: 3D Photos from Any Image, Free and Private">
 <meta property="og:description" content="Drop a photo, get an animated 3D scene. AI depth runs in your browser and nothing is uploaded. Export depth maps, anaglyphs, stereo pairs and looping videos.">
 <meta property="og:url" content="https://depthgram.com/">
 <meta property="og:image" content="https://depthgram.com/og.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Depthgram: any photo becomes an animated 3D scene, computed in your browser and never uploaded.">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://depthgram.com/">
 <meta name="twitter:title" content="Depthgram: 3D Photos from Any Image, Free and Private">
 <meta name="twitter:description" content="Drop a photo, get an animated 3D scene. AI depth runs in your browser and nothing is uploaded.">
 <meta name="twitter:image" content="https://depthgram.com/og.png">
+<meta name="twitter:image:alt" content="Depthgram: any photo becomes an animated 3D scene, computed in your browser and never uploaded.">
+
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://huggingface.co" crossorigin>
 <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+<link rel="dns-prefetch" href="https://cdn-lfs.huggingface.co">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Depthgram",
-  "url": "https://depthgram.com/",
-  "description": "Turn any photo into an animated 3D parallax scene with AI depth estimation that runs entirely in your browser. Export depth maps, red/cyan anaglyphs, stereo pairs and looping videos. No upload, no account, free.",
-  "applicationCategory": "MultimediaApplication",
-  "operatingSystem": "Any",
-  "browserRequirements": "Requires WebGL 2",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://depthgram.com/#website",
+      "url": "https://depthgram.com/",
+      "name": "Depthgram",
+      "description": "Turn any photo into an animated 3D scene, in the browser.",
+      "publisher": { "@id": "https://depthgram.com/#author" },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "Person",
+      "@id": "https://depthgram.com/#author",
+      "name": "Alex Spataru",
+      "url": "https://github.com/alex-spataru"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://depthgram.com/#app",
+      "name": "Depthgram",
+      "url": "https://depthgram.com/",
+      "description": "Turn any photo into an animated 3D parallax scene with AI depth estimation that runs entirely in your browser. Export depth maps, red/cyan anaglyphs, stereo pairs and looping videos. No upload, no account, free.",
+      "applicationCategory": "MultimediaApplication",
+      "applicationSubCategory": "Photo editor",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires WebGL 2",
+      "isAccessibleForFree": true,
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+      "image": "https://depthgram.com/og.png",
+      "screenshot": "https://depthgram.com/og.png",
+      "author": { "@id": "https://depthgram.com/#author" },
+      "featureList": [
+        "Monocular depth estimation on-device",
+        "Animated parallax playback locked to the display refresh rate",
+        "Depth map export as PNG",
+        "Red/cyan anaglyph export",
+        "Parallel side-by-side stereo pair export",
+        "Seamlessly looping MP4 or WebM clips"
+      ],
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+  ]
 }
 </script>
 <style>
@@ -82,15 +138,28 @@ body{
 .app{max-width:1320px;margin:0 auto;padding:34px 24px 64px}
 
 header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
-h1{font-size:26px;font-weight:700;letter-spacing:-.021em}
-.tagline{font-size:15px;color:var(--label);letter-spacing:-.01em}
-header .grow{flex:1}
-.badge{
-  font:500 12px/1 var(--mono);color:var(--label);letter-spacing:.01em;
-  padding:7px 12px;border-radius:999px;background:var(--glass);
-  border:.5px solid var(--stroke);backdrop-filter:blur(20px) saturate(180%);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);
+.brand{display:flex;align-items:center;gap:13px}
+/* Same artwork as favicon.svg, cropped to the trees; both come out of
+   build_icons.py, so an edit there has to be pasted back here. */
+.mark{width:38px;height:35px}
+
+/* ---- CRT treatment, page marks only.
+   Bloom is a CSS filter; the scanlines are an SVG rect clipped to the same
+   silhouette they cross. Blend modes were the obvious way to do this
+   and the wrong one: the page background is painted on the canvas, so an
+   overlay has no backdrop to blend with and prints its own grey box. */
+.crt{position:relative;display:block;flex:none}
+.crt svg{
+  display:block;width:100%;height:100%;overflow:visible;
+  filter:drop-shadow(0 0 3px rgba(43,231,240,.4)) drop-shadow(0 0 9px rgba(106,43,217,.34));
+  animation:crtFlicker 7s ease-in-out infinite;
 }
+@keyframes crtFlicker{0%,90%,100%{opacity:1}93%{opacity:.85}96%{opacity:.96}}
+@media (prefers-reduced-motion:reduce){
+  .crt svg{animation:none}
+}
+h1{font-size:26px;font-weight:700;letter-spacing:-.021em;line-height:1.12}
+.tagline{font-size:14px;color:var(--label);letter-spacing:-.008em}
 
 .banner{
   display:none;margin-bottom:18px;padding:13px 16px;border-radius:14px;
@@ -222,6 +291,49 @@ section>.toolbar{margin-top:0;margin-bottom:10px}
   .coach .ghost,.coach .ring{animation:none;left:56%;top:57%;opacity:1}
   .coach .cap .b{display:none}
 }
+
+/* ---------------------------------------------------------------- waiting */
+/* The first run pulls about 50 MB of weights: tens of seconds on a phone over
+   cellular. A 3 px bar under the toolbar is not enough signal for a wait that
+   long, so the wait takes the frame and the controls go out with it. */
+.load{
+  position:absolute;inset:0;z-index:4;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:9px;padding:26px;text-align:center;
+  background:rgba(11,11,12,.66);
+  backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);
+}
+.load[hidden]{display:none}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.load-mark{width:54px;height:50px;margin-bottom:2px}
+/* Layers light far to near: the wait shows the thing being built. */
+.load-mark use{animation:layerIn 1.9s ease-in-out infinite}
+.load-mark use:nth-of-type(2){animation-delay:.22s}
+.load-mark use:nth-of-type(3){animation-delay:.44s}
+@keyframes layerIn{0%,100%{opacity:.28}45%{opacity:1}}
+.load strong{font-size:16px;font-weight:600;letter-spacing:-.012em}
+.load .sub{font-size:13.5px;line-height:1.45;color:var(--label);max-width:36ch}
+.load-bar{
+  width:min(300px,78%);height:4px;margin-top:5px;border-radius:2px;
+  background:var(--track);overflow:hidden;
+}
+.load-bar i{
+  display:block;height:100%;width:0;border-radius:2px;
+  background:var(--accent);transition:width .25s linear;
+}
+/* Nothing to divide by yet (session warm-up, the depth pass itself), so sweep
+   rather than invent a percentage. */
+.load-bar.wait i{width:38%;transition:none;animation:sweep 1.15s ease-in-out infinite}
+@keyframes sweep{0%{transform:translateX(-110%)}100%{transform:translateX(275%)}}
+.load-num{font:500 12px var(--mono);color:var(--faint);letter-spacing:.02em;min-height:14px}
+@media (prefers-reduced-motion:reduce){
+  .load-mark use{animation:none;opacity:1}
+  .load-bar.wait i{animation:none;width:100%;opacity:.35}
+}
+
+/* While a scene is being built there is nothing for these to change, and a
+   control that answers but does nothing reads as a broken app. */
+.app.busy .toolbar,.app.busy aside{opacity:.42;pointer-events:none;transition:opacity .2s ease}
 
 /* Full-screen HUD. The side panel is gone in full screen, so the two controls
    you actually reach for while watching live here instead. Auto-hides. */
@@ -369,15 +481,36 @@ input[type=range]:focus-visible{outline:3px solid color-mix(in srgb,var(--accent
   .seg .ind,.sw i,.sw i::after,.btn{transition:none}
 }
 
+/* Prose on the page, not only in the meta tags: the app is a single URL, so
+   this is the only place a reader (or a crawler) can find out what it does. */
+.about{margin-top:30px;padding-top:22px;border-top:.5px solid var(--stroke-2)}
+.about h2{
+  font:600 11.5px/1 var(--sans);letter-spacing:.09em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:15px;
+}
+.about .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.about h3{font-size:14.5px;font-weight:600;letter-spacing:-.012em;margin-bottom:5px}
+.about p{font-size:13.5px;line-height:1.56;color:var(--label)}
+.about a{color:var(--label)}
+@media (max-width:760px){.about .grid{grid-template-columns:minmax(0,1fr);gap:16px}}
+
 footer{
   margin-top:34px;padding-top:18px;border-top:.5px solid var(--stroke-2);
-  display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;
   font-size:13px;color:var(--faint);
 }
-footer .priv{color:var(--label)}
 footer a{color:var(--label);text-decoration:none}
 footer a:hover{text-decoration:underline}
 footer .grow{flex:1}
+footer .sep{opacity:.5}
+/* The repository is the deliverable, so the source link leads the footer and
+   is the only element there with full-strength ink. */
+.gh{
+  display:inline-flex;align-items:center;gap:7px;
+  color:var(--ink)!important;font-weight:500;
+}
+.gh svg{width:16px;height:16px;fill:currentColor;flex:none}
+.gh:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:3px;border-radius:6px}
 
 /* ---------------------------------------------------------------- mobile */
 @media (max-width:1000px){
@@ -388,12 +521,13 @@ footer .grow{flex:1}
   .viewer{max-height:56vh}
 }
 @media (max-width:640px){
-  .app{padding:18px 14px calc(40px + env(safe-area-inset-bottom))}
+  .app{padding:18px max(14px,env(safe-area-inset-right))
+              calc(40px + env(safe-area-inset-bottom))
+              max(14px,env(safe-area-inset-left))}
   header{gap:6px;margin-bottom:14px}
-  h1{font-size:22px;width:100%}
-  .tagline{font-size:14px;width:100%}
-  header .grow{display:none}
-  .badge{font-size:11px;padding:6px 10px;order:3;margin-top:2px}
+  h1{font-size:22px}
+  .tagline{font-size:13.5px}
+  .mark{width:34px;height:31px}
   .viewer{border-radius:16px;max-height:46vh}
   .panel{padding:15px;border-radius:18px}
   .toolbar .grow{display:none}
@@ -418,15 +552,47 @@ footer .grow{flex:1}
 </head>
 <body>
 
+<!-- The mark, defined once. Both places that draw it (header, wait screen)
+     reference these, and the scanline overlay clips to the same silhouette,
+     so the geometry exists twice in the page and not eight times.
+     The paths mirror favicon.svg; build_icons.py is where they come from. -->
+<svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="dgFar"><path d="M26.49 11.06 L36.88 25.43 L33.29 26.16 L40.98 36.66 L36.82 37.39 L44.18 47.88 L8.81 47.88 L16.17 37.39 L12.01 36.66 L19.70 26.16 L16.11 25.43Z" fill="#6A2BD9"/></g>
+    <g id="dgMid"><path d="M32.62 11.06 L43.00 25.43 L39.41 26.16 L47.11 36.66 L42.95 37.39 L50.30 47.88 L14.94 47.88 L22.29 37.39 L18.13 36.66 L25.83 26.16 L22.24 25.43Z" fill="#0A84FF"/></g>
+    <g id="dgNear"><path d="M38.23 11.06 L48.61 25.43 L45.02 26.16 L52.72 36.66 L48.56 37.39 L55.91 47.88 L20.55 47.88 L27.90 37.39 L23.74 36.66 L31.44 26.16 L27.85 25.43Z" fill="#2BE7F0"/><path d="M34.19 47.88 L42.27 47.88 L42.27 54.18 L34.19 54.18Z" fill="#2BE7F0"/></g>
+    <clipPath id="dgClip">
+      <path d="M26.49 11.06 L36.88 25.43 L33.29 26.16 L40.98 36.66 L36.82 37.39 L44.18 47.88 L8.81 47.88 L16.17 37.39 L12.01 36.66 L19.70 26.16 L16.11 25.43Z"/><path d="M32.62 11.06 L43.00 25.43 L39.41 26.16 L47.11 36.66 L42.95 37.39 L50.30 47.88 L14.94 47.88 L22.29 37.39 L18.13 36.66 L25.83 26.16 L22.24 25.43Z"/><path d="M38.23 11.06 L48.61 25.43 L45.02 26.16 L52.72 36.66 L48.56 37.39 L55.91 47.88 L20.55 47.88 L27.90 37.39 L23.74 36.66 L31.44 26.16 L27.85 25.43Z"/><path d="M34.19 47.88 L42.27 47.88 L42.27 54.18 L34.19 54.18Z"/>
+    </clipPath>
+    <!-- Scan pitch is in user units: at the sizes the mark is drawn this
+         lands near one device pixel, which reads as phosphor texture instead
+         of shredding the silhouette. -->
+    <pattern id="dgScan" width="4" height="1.5" patternUnits="userSpaceOnUse">
+      <rect width="4" height="0.62" fill="#000" opacity=".42"/>
+    </pattern>
+  </defs>
+</svg>
+
 <div class="bg"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
 
 <div class="app">
 
 <header>
-  <h1>Depthgram</h1>
-  <p class="tagline">Depth-mapped 3D from a single photo</p>
-  <span class="grow"></span>
-  <span class="badge" id="env">Checking display&hellip;</span>
+  <div class="brand">
+    <!-- Trees only: the icon tile belongs on a home screen, not on the page it
+         is already the header of. Cropped to the artwork's own bounds. -->
+    <span class="mark crt">
+    <svg viewBox="8.3 10.6 48.1 44.1" role="img" aria-label="Depthgram">
+      <use href="#dgFar"/><use href="#dgMid"/><use href="#dgNear"/>
+      <rect class="scan" x="8.3" y="10.6" width="48.1" height="44.1"
+            fill="url(#dgScan)" clip-path="url(#dgClip)"/>
+    </svg>
+    </span>
+    <div>
+      <h1>Depthgram</h1>
+      <p class="tagline">Depth-mapped 3D from a single photo</p>
+    </div>
+  </div>
 </header>
 
 <div class="banner" id="banner">
@@ -471,6 +637,21 @@ footer .grow{flex:1}
           <span class="b">Take it off the photo and the camera drifts on its own</span>
         </div>
       </div>
+      <!-- Same three layers as the app mark, assembling far to near while you
+           wait: the wait and the thing being computed are the same idea. -->
+      <div class="load" id="load" role="status" aria-live="polite" hidden>
+        <span class="load-mark crt">
+        <svg viewBox="8.3 10.6 48.1 44.1" aria-hidden="true">
+          <use href="#dgFar"/><use href="#dgMid"/><use href="#dgNear"/>
+          <rect class="scan" x="8.3" y="10.6" width="48.1" height="44.1"
+                    fill="url(#dgScan)" clip-path="url(#dgClip)"/>
+        </svg>
+        </span>
+        <strong id="loadtitle">Getting ready&hellip;</strong>
+        <span class="sub" id="loadsub"></span>
+        <div class="load-bar" id="loadbar"><i id="loadfill"></i></div>
+        <span class="load-num" id="loadnum"></span>
+      </div>
       <div class="hud" id="hud">
         <button id="hud-ptr" data-icon="cursor" aria-pressed="true">Follow Pointer</button>
         <button id="hud-play" data-icon="pause">Pause</button>
@@ -485,6 +666,32 @@ footer .grow{flex:1}
     </div>
 
     <p class="keys">Space play · D view · P pointer · F full screen · R reset</p>
+
+    <div class="about">
+      <h2>How Depthgram works</h2>
+      <div class="grid">
+        <article>
+          <h3>Depth is computed on your device</h3>
+          <p><a href="https://depth-anything-v2.github.io" target="_blank" rel="noopener">Depth Anything V2</a>
+          runs inside the page, on WebGPU where the browser has it and WASM
+          everywhere else. Your photo is never uploaded, because there is no
+          server to upload it to.</p>
+        </article>
+        <article>
+          <h3>Motion is locked to your display</h3>
+          <p>The renderer measures the refresh rate and closes every camera
+          sweep on a whole frame, so the loop never beats against the screen.
+          Focus plane and motion range are read from the depth histogram, not
+          guessed.</p>
+        </article>
+        <article>
+          <h3>Exports you can actually use</h3>
+          <p>PNG frames and depth maps, red/cyan anaglyphs, parallel
+          side-by-side stereo pairs for a VR viewer, and MP4 or WebM clips cut
+          to a whole number of sweeps so they loop without a seam.</p>
+        </article>
+      </div>
+    </div>
   </section>
 
   <aside>
@@ -572,10 +779,16 @@ footer .grow{flex:1}
 </main>
 
 <footer>
-  <span class="priv">Private by design: the AI runs in your browser and photos never leave your device.</span>
+  <a class="gh" href="https://github.com/Depthgram/Depthgram" target="_blank" rel="noopener">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    Source on GitHub
+  </a>
+  <span class="sep">·</span>
+  <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener license">GPL-3.0-or-later</a>
   <span class="grow"></span>
-  <a href="https://github.com/depthgram/depthgram" target="_blank" rel="noopener">Open source · GPLv3</a>
-  <span>Depth by <a href="https://depth-anything-v2.github.io" target="_blank" rel="noopener">Depth Anything V2</a></span>
+  <span>Depth by <a href="https://depth-anything-v2.github.io" target="_blank" rel="noopener">Depth Anything V2</a>, run with <a href="https://github.com/huggingface/transformers.js" target="_blank" rel="noopener">transformers.js</a></span>
+  <span class="sep">·</span>
+  <span>Demos from <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></span>
 </footer>
 
 </div>
@@ -658,6 +871,44 @@ function progress(f){
   b.classList.add('show'); $('barfill').style.width=(clamp(f,0,1)*100).toFixed(1)+'%';
 }
 
+/* ---------------------------------------------------------------- waiting */
+/* One screen owns every wait, and the panel is inert for its duration. The
+   controls are disabled for real, not only dimmed: pointer-events alone still
+   leaves them in the tab order and answering to the keyboard. */
+const loadEl=$('load'), loadFill=$('loadfill'), loadNum=$('loadnum'),
+      loadTitle=$('loadtitle'), loadSub=$('loadsub'), loadBar=$('loadbar');
+let hasScene=false, heldOff=null;
+
+function setBusy(on){
+  const app=document.querySelector('.app');
+  app.classList.toggle('busy', on);
+  app.setAttribute('aria-busy', on?'true':'false');
+  const els=[...app.querySelectorAll('.toolbar button, aside button, aside input')];
+  if(on){
+    /* Remember what was already unavailable (Export before the first photo),
+       or the wait would quietly enable it on the way out. */
+    if(!heldOff) heldOff=new Set(els.filter(e=>e.disabled));
+    els.forEach(e=>{ e.disabled=true; });
+  }else{
+    els.forEach(e=>{ e.disabled = heldOff ? heldOff.has(e) : false; });
+    heldOff=null;
+    $('export').disabled=!hasScene;
+  }
+}
+
+const MB=n=>(n/1048576).toFixed(1);
+/* frac null means "no honest number to show": the bar sweeps instead. */
+function waiting(title, sub, frac, detail){
+  loadEl.hidden=false;
+  loadTitle.textContent=title;
+  loadSub.textContent=sub||'';
+  const known = typeof frac==='number';
+  loadBar.classList.toggle('wait', !known);
+  loadFill.style.width = known ? (clamp(frac,0,1)*100).toFixed(1)+'%' : '';
+  loadNum.textContent = detail || (known ? Math.round(clamp(frac,0,1)*100)+'%' : '');
+}
+function waitingDone(){ loadEl.hidden=true; loadBar.classList.remove('wait'); }
+
 /* ---------------------------------------------------------------- display */
 let refresh=60, refreshLocked=false, dtHist=[];
 function measureRefresh(now){
@@ -677,17 +928,12 @@ function measureRefresh(now){
     const known=[60,72,75,90,100,120,144,165,240,360];
     refresh=known.find(k=>Math.abs(k-raw)/k<0.04) || Math.round(raw);
     refreshLocked=true;
-    badge();
     syncHz();
   }
 }
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden){ refreshLocked=false; dtHist=[]; }
 });
-function badge(){
-  $('env').textContent = (refreshLocked ? refresh+' Hz display' : 'Checking display…')
-    + (gl ? ' · WebGL 2' : ' · No WebGL') + (hasGPU ? ' · WebGPU' : '');
-}
 /* Frames per cycle; the notch snaps the rate to refresh/N so a cycle closes
    exactly on a frame boundary. */
 function lockInfo(){
@@ -1075,6 +1321,7 @@ function armDismiss(){
 
 addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if(loading) return;
   const k=e.key.toLowerCase();
   if(k===' '){ e.preventDefault(); playing=!playing; syncAll(); }
   else if(k==='d'){ P.view=(P.view+1)%3; syncAll(); save(); }
@@ -1150,11 +1397,16 @@ function stereoPair(){
 const CLIP_MIME=['video/mp4;codecs=avc1.640028','video/mp4','video/webm;codecs=vp9','video/webm']
   .find(m=>window.MediaRecorder && MediaRecorder.isTypeSupported(m));
 const CLIP_EXT = CLIP_MIME && CLIP_MIME.startsWith('video/mp4') ? 'mp4' : 'webm';
-$('clipfmt').textContent = CLIP_MIME ? CLIP_EXT.toUpperCase() : 'video';
+/* A recorder is not enough: the frames come from canvas.captureStream, which
+   some mobile browsers do not implement. Offering a menu item that can only
+   fail is worse than not offering it. */
+const CLIP_OK = !!CLIP_MIME && typeof out.captureStream === 'function';
+$('clipfmt').textContent = CLIP_OK ? CLIP_EXT.toUpperCase() : 'n/a';
+if(!CLIP_OK) document.querySelector('[data-x="clip"]').disabled = true;
 let recording=false;
 
 async function recordClip(){
-  if(!CLIP_MIME){ say('Video capture is not supported in this browser.',true); return; }
+  if(!CLIP_OK){ say('Video capture is not supported in this browser.',true); return; }
   if(recording) return;
   recording=true;
   const keep={playing, ptr:P.cues.pointer, view:P.view, path:P.path};
@@ -1443,9 +1695,10 @@ let loading=false;
 async function load(f, tag){
   if(loading) return;
   loading=true;
-  $('demo').disabled=true; $('open').disabled=true;
+  setBusy(true);
   try{
     ready=false; say('Reading the image…'); progress(0.02);
+    waiting('Reading the photo', '', null);
     const bmp=await createImageBitmap(f);
     const s=Math.min(1, MAXW/Math.max(bmp.width,bmp.height));
     cw=Math.round(bmp.width*s); ch=Math.round(bmp.height*s);
@@ -1456,7 +1709,22 @@ async function load(f, tag){
 
     if(!estimator){
       say('Loading Depth Anything V2. The first run downloads about 50 MB…');
-      const opts={ progress_callback: p=>{ if(p.status==='progress'&&p.total) progress(p.loaded/p.total); } };
+      /* The weights arrive as several files, so a single file's ratio jumps
+         backwards when the next one starts; sum the bytes instead. */
+      const files=new Map();
+      const opts={ progress_callback: p=>{
+        if(p.status!=='progress' || !p.total) return;
+        files.set(p.file, {loaded:p.loaded, total:p.total});
+        let l=0, t=0;
+        for(const v of files.values()){ l+=v.loaded; t+=v.total; }
+        progress(l/t);
+        waiting('Downloading the depth model',
+                'About 50 MB, once. Your browser keeps it cached for next time.',
+                l/t, MB(l)+' / '+MB(t)+' MB');
+      } };
+      waiting('Downloading the depth model',
+              'About 50 MB, once. Your browser keeps it cached for next time.',
+              null, 'starting');
       try{
         estimator = hasGPU
           ? await pipeline('depth-estimation','onnx-community/depth-anything-v2-small',
@@ -1464,12 +1732,13 @@ async function load(f, tag){
           : await pipeline('depth-estimation','onnx-community/depth-anything-v2-small', opts);
       }catch(e){
         console.warn('WebGPU path failed, falling back',e);
-        hasGPU=false; badge();
+        hasGPU=false;
         estimator = await pipeline('depth-estimation','onnx-community/depth-anything-v2-small', opts);
       }
     }
 
     say('Estimating depth…'); progress(0.9);
+    waiting('Estimating depth', 'The model is reading your photo. This runs on your device.', null);
     const blob = await new Promise(r=>srcCanvas.toBlob(r,'image/png'));
     const url  = URL.createObjectURL(blob);
     let res;
@@ -1490,7 +1759,7 @@ async function load(f, tag){
 
     trail=[]; splitPos=0.5;
     showCoach();
-    $('export').disabled=false;
+    hasScene=true;
     $('credit').hidden = tag!=='demo';
     if(tag==='demo' && demoPage) $('creditlink').href=demoPage;
     ready=true; progress(null);
@@ -1502,7 +1771,8 @@ async function load(f, tag){
       +(location.protocol==='file:'?'. Serve this over http, not file://':''), true);
   }finally{
     loading=false;
-    $('demo').disabled=false; $('open').disabled=false;
+    waitingDone();
+    setBusy(false);
   }
 }
 
@@ -1768,7 +2038,6 @@ if(!viewer.requestFullscreen) $('full').hidden=true;
 window.__pl={ renderEye, anaglyph, stereoPair, shapedDepth, get ready(){ return ready; } };
 
 paintIcons();
-badge();
 syncAll();
 if(!gl){
   say('WebGL 2 is unavailable in this browser. The renderer needs it.',true);
