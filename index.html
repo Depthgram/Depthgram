@@ -708,6 +708,39 @@ footer .sep{opacity:.5}
 
   <aside>
     <div class="panel">
+      <h2>Rendering</h2>
+
+      <div class="field">
+        <div class="head"><label for="lay">Depth Layers</label><span class="num" id="layv">125</span></div>
+        <input type="range" id="lay" min="2" max="192" step="1" value="125">
+        <p class="note" id="laysub">Depth is cut into this many planes.</p>
+      </div>
+
+      <div class="field">
+        <div class="head"><label>View</label></div>
+        <div class="seg" id="view" style="--n:5;--i:0">
+          <span class="ind"></span>
+          <button data-v="0" aria-pressed="true">Parallax</button>
+          <button data-v="1" aria-pressed="false">Depth</button>
+          <button data-v="2" aria-pressed="false">Split</button>
+          <button data-v="3" aria-pressed="false">Anaglyph</button>
+          <button data-v="4" aria-pressed="false">Stereo</button>
+        </div>
+        <p class="note" id="viewsub"></p>
+      </div>
+
+      <div class="field">
+        <label class="sw"><span>Follow Pointer</span><input type="checkbox" id="cue-pointer" checked><i></i></label>
+        <label class="sw"><span>Depth of Field</span><input type="checkbox" id="cue-dof"><i></i></label>
+        <label class="sw" id="tiltrow" hidden><span>Tilt to Look</span><input type="checkbox" id="cue-tilt"><i></i></label>
+      </div>
+
+      <div class="field">
+        <div class="toolbar"><button class="btn" id="reset" data-icon="reset">Reset to Defaults</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
       <h2>Motion</h2>
 
       <div class="field">
@@ -756,39 +789,6 @@ footer .sep{opacity:.5}
       <div class="scope">
         <canvas id="scope" width="620" height="216" aria-label="Camera path and displacement"></canvas>
         <div class="key"><span id="k1">Idle</span><span id="k2"></span></div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Rendering</h2>
-
-      <div class="field">
-        <div class="head"><label for="lay">Depth Layers</label><span class="num" id="layv">125</span></div>
-        <input type="range" id="lay" min="2" max="192" step="1" value="125">
-        <p class="note" id="laysub">Depth is cut into this many planes.</p>
-      </div>
-
-      <div class="field">
-        <div class="head"><label>View</label></div>
-        <div class="seg" id="view" style="--n:5;--i:0">
-          <span class="ind"></span>
-          <button data-v="0" aria-pressed="true">Parallax</button>
-          <button data-v="1" aria-pressed="false">Depth</button>
-          <button data-v="2" aria-pressed="false">Split</button>
-          <button data-v="3" aria-pressed="false">Anaglyph</button>
-          <button data-v="4" aria-pressed="false">Stereo</button>
-        </div>
-        <p class="note" id="viewsub"></p>
-      </div>
-
-      <div class="field">
-        <label class="sw"><span>Follow Pointer</span><input type="checkbox" id="cue-pointer" checked><i></i></label>
-        <label class="sw"><span>Depth of Field</span><input type="checkbox" id="cue-dof"><i></i></label>
-        <label class="sw" id="tiltrow" hidden><span>Tilt to Look</span><input type="checkbox" id="cue-tilt"><i></i></label>
-      </div>
-
-      <div class="field">
-        <div class="toolbar"><button class="btn" id="reset" data-icon="reset">Reset to Defaults</button></div>
       </div>
     </div>
   </aside>
