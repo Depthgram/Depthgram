@@ -133,6 +133,11 @@ machine and break on someone else's.
   which is what keeps a striped square off the icon.
 - The GitHub organization is `Depthgram`; the site repo is `Depthgram/Depthgram` and
   the org profile lives in `Depthgram/.github`.
+- **IndexNow:** `submit_indexnow.py` pings Bing/Yandex/Seznam/Naver after a deploy
+  lands, never at build time (the engines fetch submitted URLs within moments).
+  The key file `3ffe01a05a8c4cd2a0424bf15d5a572e.txt` at the site root is the
+  domain-ownership proof; never delete or rename it without generating a new key
+  and updating `KEY` in the script. Google ignores IndexNow; the sitemap covers it.
 
 ## Code Style
 
