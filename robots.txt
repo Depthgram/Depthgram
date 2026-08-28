@@ -1,4 +1,54 @@
+# robots.txt for Depthgram
+# The site is one public page with no private area, so everything is allowed.
+
 User-agent: *
 Allow: /
 
 Sitemap: https://depthgram.com/sitemap.xml
+
+# AI crawlers. Depthgram is GPL-3.0-or-later and has nothing to hide from an
+# index or an assistant, so training and grounding crawlers are allowed too.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: CCBot
+Allow: /
